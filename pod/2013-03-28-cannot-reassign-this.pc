@@ -1,0 +1,73 @@
+PHP won't let you reassign C<$this> because it is a readonly reference to the contextual object.
+
+  class Test {
+      var $foo = "bar";
+
+      function abc() {
+          $this = "Hello!";
+      }
+  }
+
+  $test = new Test();
+  $test->abc();
+
+Z<>
+
+  PHP Fatal error:  Cannot re-assign $this in - on line 14
+
+  Fatal error: Cannot re-assign $this in - on line 14
+
+Since PHP has the flaw of allowing you to use variables as variables, however, you can put C<'this'> in
+a variable. PHP doesn't seem to notice that that's assigning to C<$this>:
+
+  class Test {
+      var $foo = "bar";
+  
+      function abc() {
+          $thisStr = "this";
+          $$thisStr = "Hello!";
+      }
+  }
+  
+  $test = new Test();
+  $test->abc();
+
+Tricked you!
+
+However, if you then use C<$this> as an object, it's still C<$this>! But if you don't, it's not:
+
+  class Test {
+      var $foo = "bar";
+  
+      function abc() {
+          var_dump($this);
+          var_dump($this->foo);
+  
+          $thisStr = "this";
+  
+          $$thisStr->foo = "cats";
+  
+          $$thisStr = "Hello!";
+  
+          var_dump($this);
+          var_dump($this->foo);
+      }
+  }
+  
+  $test = new Test();
+  $test->abc();
+
+Z<>
+
+  class Test#1 (1) {
+    public $foo =>
+    string(3) "bar"
+  }
+  string(3) "bar"
+  string(6) "Hello!"
+  string(4) "cats"
+
+Surely someone's realised by now that the people behind PHP might not really know what they're doing.
+
+B<Edit:> turns out this already came from
+L<http://www.reddit.com/r/lolphp/comments/1b6dys/fun_with_this_guess_the_output/|reddit>
