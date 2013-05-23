@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 use File::Find::Rule;
+use String::Tagged::HTML;
 
 my $pc = Pod::Cats::PodCats->new({
     delimiters => '[<{|'
@@ -17,8 +18,10 @@ for my $file (@files) {
     !-e $html_fn or (stat $file)[9] > (stat $html_fn)[9] or next;
 
     open my $html_out, ">", $html_fn or warn "Could not open $html_fn: $!" and next;
-    $pc->{print_to} = $html_out;
+    $pc->{html} = String::Tagged::HTML->new();
     $pc->parse_file($file);
+
+    $html_out->print($pc->{html});
 }
 
 package Pod::Cats::PodCats;
@@ -41,10 +44,11 @@ sub handle_command {
     grep $_ eq $command, @COMMANDS or die "Not a command: $command";
 
     if ($command =~ /h\d/) {
-        print {$self->{print_to}} "<$command>$default</$command>\n\n";
+        my $str = String::Tagged::HTML->new($default);
+        $self->{html} .= "\n" . $str->as_html($command) . "\n";
     }
     if ($command eq 'hr') {
-        print {$self->{print_to}} "<hr/>\n\n";
+        $self->{html} .= String::Tagged::HTML->new_raw('<hr />');
     }
 }
 
@@ -55,14 +59,16 @@ sub handle_paragraph {
     my $self = shift;
 
     local $" = '';
-    print {$self->{print_to}} "<p>@_</p>\n\n";
+    my $str = String::Tagged::HTML->new("@_");
+    $self->{html} .= "\n" . $str->as_html('p') . "\n";
 }
 
 sub handle_verbatim {
     my $self = shift;
     my $para = $self->SUPER::handle_verbatim(@_);
 
-    print {$self->{print_to}} "<pre>$para</pre>\n\n";
+    my $str = String::Tagged::HTML->new($para);
+    $self->{html} .= "\n" . $str->as_html('pre') . "\n";
 }
 
 sub handle_entity {
@@ -70,18 +76,23 @@ sub handle_entity {
     my $entity = shift;
     my @content = @_;
 
-    if ($entity eq 'B') {
-        return "<strong>@content</strong>";
+    my $simple = {
+        'B' => 'b',
+        'C' => 'code',
+        'I' => 'em',
+    }->{$entity};
+
+    if ($simple) {
+        my $str = String::Tagged::HTML->new("@content");
+        $str->apply_tag(-1, -1, $simple => 1);
+        return $str;
     }
-    if ($entity eq 'C') {
-        return "<code>@content</code>";
-    }
-    if ($entity eq 'I') {
-        return "<em>@content</em>";
-    }
+
     if ($entity eq 'L') {
         my ($link, $text) = split /\|/, shift @content;
-        return qq(<a href="$link">$text @content</a>);
+        my $str = String::Tagged::HTML->new("$text @content");
+        $str->apply_tag(-1, -1, a => { href => $link });
+        return $str;
     }
 
     return $self->SUPER::handle_entity($entity, @content);
