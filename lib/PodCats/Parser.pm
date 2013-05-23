@@ -104,6 +104,14 @@ sub handle_entity {
 
     if ($entity eq 'L') {
         my ($link, $text) = split /\|/, shift @content;
+
+        $text = $link if not $text;
+
+        # looks like a module
+        if ($link =~ /^(\w+)(::\w+)*$/) {
+            $link = "https://metacpan.org/module/$link";
+        }
+
         my $str = PodCats::String::Tagged::HTML->new("$text @content");
         $str->apply_tag(-1, -1, a => { href => $link });
         return $str;
