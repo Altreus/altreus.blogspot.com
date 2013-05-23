@@ -1,0 +1,418 @@
+=notice Edits: There is no strict reason why C<map> should not return a shorter list, so I'm not discouraging it any more.
+
+C<map> and C<grep> are useful tools in Perl. To understand them needs only the
+ability to follow some logic, but to use them requires an understanding of lists. You should read 
+L<http://altreus.blogspot.com/2011/08/lists-and-things-made-of-lists.html|this post on lists> 
+to understand how lists work in Perl. The main thing you should understand from that is
+how lists exist in memory, and how they are used with relation to arguments to functions.
+
+C<map> and C<grep> are actually operators, but they behave so much like
+functions that you'll find them in L<http://perldoc.perl.org/perlfunc.html|perlfunc>.
+What they do is they take a list of arguments, like functions do, and convert that list into
+another list. C<map> I<transforms> the input list, and
+C<grep> I<filters> the input list.
+
+Remember that lists with zero or one item in them are still lists.
+
+=h2 Understanding C<map>
+
+To understand C<map> you need to be able to understand the following:
+
+  y = f(x)
+
+If you don't, let's briefly explain it. It means that if you do something (C<f>) to a
+value (C<x>) you will get another value (C<y>). You've probably seen this before
+in graphs - the straight line formula is C<y = mx + c>; we can see that all of C<mx +
+c> is a function using C<x> (C<m> and C<c> are constants),
+meaning that if you feed an C<x> coordinate in, you will get a C<y> coordinate
+back. We say that I<C<y> is a function of C<x>.>
+
+In the case of map, C<x> will always be a scalar, because of how lists in Perl are lists
+of scalars. C<y> could be more than one value, this being how your output list can be
+longer than your input list. C<f> is provided to C<map>.
+
+C<map> is therefore a I<transformation>. Its purpose is to C<consistently
+transform> your input list into an output list, by providing each item of your input list to your
+C<f>, and collecting the C<y>s that you get out of it.
+
+C<map> turns this:
+
+  map { f } x, x1, x2, x3, x4...
+
+into this:
+
+  f(x), f(x1), f(x2), f(x3), f(x4)...
+
+A simple example is mathematical: even numbers. The I<n>th even number is C<2n>—you
+learned this in school. If you didn't go to school then you'd better catch up.
+
+That means, for C<y> to be the C<x>th even number, our C<f> is
+C<2x>.
+
+  f(x) = 2x 
+
+  f(1) = 2×1 = 2 
+  f(2) = 2×2 = 4 ...
+
+That means that, given the numbers 1 to 10 we can find the first 10 even numbers that are greater
+than 0. If we provide our C<f> to C<map>, and the list C<1 .. 10>, we
+should get that.
+
+Defining C<f(x)> for C<map> is a simple case of using the special variable
+C<$_> in place of C<x>. For now, we will define our C<f> using
+C<{}>.
+
+  print join ', ', map { $_ * 2 } 1 .. 10 
+  
+Z<>
+
+  2, 4, 6, 8, 10, 12, 14, 16, 18, 20
+
+This is a good example of what we were learning about lists in the previous post. The
+C<join> operator joins a list of values using the specified string, in this case a comma
+and a space. There is no requirement in Perl that this list be either an array or a hard-coded,
+comma-separated list: it can be anything that, in list context, returns a listF<1>.  That
+could be a function, or another operator like C<map> or C<grep>.
+
+This example serves to explain in simple terms how some functionality can be routinely applied to a
+set of values to return a new set of values. There is no requirement that C<y> is
+different from C<x> after the execution of C<f(x)>. For example, you might wish
+to search a dictionary for a set of words, but the words themselves might be suffering from grammar,
+and hence have different letter cases. The dictionary itself would be entirely in lowercase, and
+hence you would want a lowercase edition of your set of words.
+
+  my @lc_words = map { lc } @words
+
+In this case, the C<f()> that we're applying to all members of the array is the operator
+C<lc>, which operates on C<$_> by default and returns a lowercase version of its
+operand. If the input word happened to be already lowercase, the output will equal the input. No
+matter.
+
+=h3 List Return Values
+
+If you recall, lists are lists, in Perl. Arrays and hashes are things constructed from lists, and
+both of these are treated as lists when used where a list is expected. You can see this principle in
+action in these examples: our first example used the range operator C<..> to construct the
+list of integers between 1 and 10, and fed that to C<map>. The second example used the
+array C<@words>, which we assumed to exist for the example, as the input list.
+
+And then the output list was used in the first example as the argument list to C<join>,
+and in the second example it was used as the constructor for a new array. 
+
+So far we have been returning only one value, but the C<f> we provide to C<map>
+can return any number values because it is evaluated in list context. By this mechanism you can turn
+an array into a hash, which is probably the most common use of that.
+
+  my @words = qw(cat dog cow dog monkey); 
+  my %words = map { $_ => 1 } @words;
+
+The C<map> block here returns the input word, C<$_>, and 1. Remember that in 
+L<http://altreus.blogspot.com/2011/08/lists-and-things-made-of-lists.html|this post> we
+learned that C[=>] is semantically equivalent to C<,> except with the quoting
+of the word to its left. Remember also that in the same post we learned that a hash is constructed
+from any even-sized list (or an odd-sized list, with a warning). So this block is returning two
+items for every one we put in, doubling the length of the list.
+
+The use of the fat comma in a construct such as this is idiomatic: since it has no actual effect on
+the output of the C<map> block it is really only there to hearken to the usual
+construction of a hash, which is a list that uses C[=>] a lot. The image conjured is of
+taking each element of C<@words> and turning it into C[word => 1], joining it
+all together until we have an even-sized list thus: 
+
+  my %words = ( 
+    cat => 1, 
+    dog => 1, 
+    cow => 1, 
+    dog => 1, 
+    monkey => 1
+  );
+
+Knowing the intermediate steps to get to that may help:
+
+  my %words = map { $_ => 1 } @words;
+  my %words = map { $_ =>; 1 } qw(cat dog cow dog monkey); 
+  my %words = map { $_, 1 } qw(cat dog cow dog monkey); 
+  my %words = ('cat', 1, 'dog', 1, 'cow', 1, 'dog', 1, 'monkey', 1);
+
+Of course, in a true application, you would not set C<@words> in this manner in the first
+place. C<@words> will be computed, perhaps from a file passed in by name on the
+command line, which you have processed and turned into this array. 
+
+A little knowledge about hash construction is relevant here to know the actual purpose of this
+C<map> block. If you understand that a repeated key in the constructing list is simply
+overwritten by the latest occurrence of that key, you will see that this has the effect of making
+the input list unique. Although the output list is exactly double the length of the input list, that
+list is immediately used to construct a hash. The hash itself then undertakes its usual behaviour,
+and in this example the repetition of "dog" in the original array is overwritten by its last
+appearance by the construction of that hash - which is fine in this instance because all the keys
+are associated with the value C<1>. Thus any repeated word is not counted.
+
+You can also skip over part of the list as well. Perl makes no assumptions on the size of your
+returned list when running C<map>. You can use this to omit elements from your output list
+while doubling the rest.
+
+To do that, simply test C<$_> and return the empty list if you don't want the element:
+
+  map { test $_ ? ($_ => 1) : () } @things
+
+You might return the empty list if the test returns true, for example if you are trying to transform
+elements you have not already transformed and remove those you have:
+
+  my %to_cache = map { in_cache $_ ? () : ($_ => transform $_) } @stuff;
+
+For some test C<in_cache>, which returns true if its argument is in the cache, and some
+function C<transform>, which returns a transformed version of its argument, you can thus
+construct a hash of transformed stuff ready for caching. Of course, you don't have to double the
+list; you can use this simply to filter it. But if you're not going to transform C<$_>
+then it is more sensible to use C<grep>
+
+=h3 When Not To Use C<map>
+
+Now that you have a new toy you might be tempted to use it. It is simple nature. Well as with every
+tool, it is unwise to use it outside its purpose. There are four principles that you should follow
+when playing with C<map>:
+
++list
+
+=item I<The Principle of Transformation>. You can use C<map> to test each item and
+conditionally return the empty list, thus shrinking the size of the list. But unless your
+C<map> block transforms C<$_> in some other way (by returning an altered
+version, or a longer list), what you have actually got is C<grep>. In some cases it may be
+easier to read if you use both C<map> and C<grep>, using the output of
+C<grep> as the input to C<map>.
+
+=item I<The Principle of Immutability.> You should B<never transform the input list>. That
+seems contradictory, but by this I mean never alter C<$_> directly; you should always
+return an altered copy. It is not, in all cases, possible to change C<$_>. Only when the
+input list is an array is it possible to overwrite $_ for I<all> values you get from the list.
+When it is a list constructed by some other means, even a hash, the input values are often
+I<immutable>, which means you can't change them so don't try. I<Always> return a copy of
+C<$_>, with transformations applied to the copy.
+
+=item I<The Principle of Brevity>. If your transformation is quite long-winded you should
+either a) put it in a sub or b) use a C<for> loop and push onto another array.
+B<C<map> is a construct of brevity>; this should be honoured.
+
+=item I<The Principle of Containment.> If you need to do anything else while iterating over
+your list other than transforming C<x> into C<y> then you should use a
+C<for> loop for that. Your C<map> block should have B<no side effects>,
+which means when the C<map> has finished executing, everything should be the same as it
+was when it started, except now there is a new list in memory.
+
+-list
+
+The general principle is that you are getting back from <code>map</code> a new list, and leaving the
+old one alone. Don't run C<map> without using the result!
+
+=h2 Understanding C<grep>
+
+C<grep> is an operator that has many similarities to C<map>. It takes an input
+list, and returns another list. You provide some function C<f>, akin to that described for
+C<map> earlier, and it is run with each successive item from the list.
+
+The difference is simply that C<grep> returns a list of I<equal size or shorter> than
+the input list.
+
+The C<f> that you give to C<grep> is a filter, not a transformation. It tests
+each C<$_> and returns trueness or falseness:
+
+  f(x) ∈ (1,0)
+
+We are not looking in this case to return a new value, C<y>, from our function, but rather
+any value that is true or not true. Reasonably one could point out that if you are outputting a
+truth value you are running a transformation. You are: but the result of C<grep> itself is
+part of the input list. The result of C<map> is the output list. 
+
+C<grep> can be written in terms of C<map>:
+
+  @filtered = grep { test } @things; 
+  @filtered = map { test ? $_ : () } @things;
+
+A common adage is "spelt grep, pronounced filter". That's a mnemonic, of course; it's pronounced
+grep.
+
+A traditional use of C<grep> is to find the defined items in an array:
+
+  grep { defined } @array
+
+It is not uncommon to have produced an array or list with undefined elements, especially if that
+list came from a C<map> block that could return undef in some cases. Another common idiom
+is to C<map> I<and> C<grep> at the same time:
+
+  my @phone_numbers = map { $_->{phone} } grep { $_->{phone} } @people;
+
+Here C<@people> is assumed to be an array of hashrefs representing people. The
+C<grep> filters out those for whom the key 'phone' returns a true value, and the
+C<map> then returns the actual value.
+
+We can thus draw this distinction between the two: B<C<map> collects I<output>
+values, and C<grep> collects I<input> values>. You can see this is the case: the
+C<map> block is assuming that the input list is a list of hashrefs, and extracts strings
+from them. We collect the list of things that C<map> outputs. For that to work, it means
+that the I<output> of C<grep> has to be hashrefs; and since the I<input> to
+C<grep> is hashrefs but the C<grep> block only returns a value from that
+hashref, we see that the output of C<grep> is just a subset of the input.
+
+=h3 When Not To Use C<grep>
+
+C<grep> doesn't have the principle of transformation because you're not supposed to
+transform the list.
+
++list
+
+=item I<The Principle of Immutability> - C<grep> should B<not alter the input values>;
+it should merely test them.
+
+=item I<The Principle of Containment> - nothing in the C<grep> block should affect anything
+outside of the expression. B<Everything should be the same after the C<grep> has finished
+running as it was beforehand>, except now there is a new list in memory of (copies of) some or
+all of the input list.
+
+=item I<The Principle of Brevity> - if you need to do a long-winded process to find out whether or not
+you want to keep a particular C<$_>, B<take it somewhere else>, because it doesn't
+belong here. Make a sub and put it in that.
+
+-list
+
+=h2 Similar Things
+
+There is a simple concept here: You take a list, you apply a function to each element, and you get
+another list. C<map> is the simplest example of this because the list you create is
+exactly the list that C<map> returns. C<grep> is arguably more complex because
+the list you create with this process (a list of true and false values) is itself used to alter the
+input list, so you get back a different list from the one you build.
+
+=h3 C<B<sort>>
+
+C<sort> is another list operator. Like C<grep>, the list it returns comprises
+elements of the input list. Unlike C<grep>, the list it returns is the same length as the
+input list. Clearly, it sorts the input list, and returns a new one with the items in order.
+
+An important thing to have already realised by now is that if you are sorting you have to do two
+variables at once, instead of one. Perl sorts, haha, this out for you by providing you
+C<$a> and C<$b> instead of C<$_>. Your task is to tell Perl whether
+C<$a> is greater than, less than, or equal to C<$b>, by returning -1, 0 or 1
+respectively from the block.
+
+The operators C[<=>] for numbers and C<cmp> for strings do this easily for
+you, but this generalisation of the sorting process allows for you to run C<$a> and
+C<$b> through any algorithm in order to sort the list.
+
+  my @sorted = sort { length $a <=> length $b } @strings;
+
+
+=h3 C<B<for>>
+
+The C<for> loop is much more than it is in other languages, especially when used as a
+statement modifier. That's when you put it at the end instead of putting it first and using braces.
+C<for> is the operator you should use when you want to modify the array itself, rather
+than create a modified copy. Note you can only fully modify arrays and only the values of hashes.
+
+  $_++ for @array; # increment every value 
+  $_++ for values %hash; # same 
+  $_ .= "-old" for @filename_backups; # append "-old" to each filename
+
+C<map> is equivalent to doing a C<for> loop over the old array, and pushing
+things onto a new array:
+
+  my @output; push @output, $_ * 2 for @input;
+
+Presumably C<map> is more efficient, but part of Perl is that you have the option of being
+more expressive with your code, which is to say that you should write what you mean. If you mean to
+perform a map operation, use C<map>; otherwise when someone else reads your code (i.e.
+you, next month) there will be no head-scratching wondering why you used a for loop.
+
+Other functions in I<List::Util>, I<List::MoreUtils> and I<List::UtilsBy> serve to run a
+function across all items of a list in the same general way, and return either a list or a single
+value.
+
+=h3 L<List::Util>
+
++list
+
+=item C<first> - Find the first item in a list; usually used to find any item that matches
+the criterion. Often therefore used to find I<whether> any item matches the criterion.
+C<my $caps_key = first { uc $_ eq $_ } keys %hash;</code>
+
+=item C<reduce> -
+Collapse a list into one value, by repeatedly applying the function. This is called reduction, as in
+"map-reduce". Note the use of C<$a> and C<$b>, like C<sort>: we are trying to reduce a list into one value so
+we have to do two values at once, rather than one.  C<my $sum = reduce { $a + $b }
+@numbers, 0;>
+
+-list
+
+=h3 L<List::MoreUtils>
+
+This module has many more than I<List::Util> so I won't list them all.  
+
++list
+
+=item C<any>, C<all>, C<notall>, C<none> - Test the whole
+list. C<any> is similar to C<first> from I<List::Util>; the difference being
+that it will return a true value if your search succeeds, whereas C<first> could return a
+false value if you're looking for false values. These are essentially C<grep>, except they
+will stop looking if they find the answer - C<grep> will process the whole list in all
+cases.
+
+  if (any { defined } @things) {}; # if any is defined
+  if (all { defined } @things) {} # if all are defined; 
+  if (notall { defined } @things) {} # if not all are defined
+  if (none { defined } @things) {} # if no thing is defined
+
+=item C<pairwise> - This only works on arrays, but it takes one value from the first array
+and one value from the second, and gives them both to your function. Then it collects the outputs.
+It's like C<map>, except it does two things at a time.  
+
+  my %hash = pairwise { $a => $b } @keys, @values;
+  my @totals = pairwise { $a * $b } @prices, @quantities
+  
+-list
+
+=h3 L<List::UtilsBy>
+
+This is a convenience module for all those cases where normally you'd do the same thing to both
+C<$a> and C<$b>. I will stick to a couple of examples.  
+
++list
+
+=item C<sort_by> - Applies the procedure to both C<$a> and C<$b> and
+compares the results as strings (C<nsort_by> for numbers). Saves typing. 
+
+  my @sorted = nsort_by { length } @strings;
+  my @sorted = nsort_by { $_->mother->mother->mother->age } @people;
+
+=item C<uniq_by> - Makes
+the list unique based on the function.
+  my @unique_by_colour = uniq_by { $_->colour } @fruit;
+ 
+-list
+
+=h2 In Conclusion
+
+I hope this has given you, the newcomer to Perl, a good idea of what C<map> and
+C<grep> do. I also hope it has given you an insight into the general concept of applying a
+function to a sequence of values, and doing something with the result. It is an operation that is
+much more common than you'd think, even in real life.
+
+It is the basis of mail merge, for example, where you take a template and a list of names and you
+put each name in the template and, with the resulting list of letters, print and send them. That's
+C<map>.
+
+It is the basis of searching, where you have a quantity of items and you're looking for all of those
+that match a certain criterion. You apply your criterion to each and keep those that match. That's
+C<grep>.
+
+It is the basis of sorting things by height, or alphabetically, or by the number of times they've
+won the World Cup: you take the list of things, and two at a time you find out how many times
+they've won the World Cup and you sort based on that. That's C<sort> (or
+C<sort_by> or C<nsort_by>).
+
+Examining or modifying a list is an awfully common operation. One thing I cannot teach you, however,
+is how to recognise when you should use one. Feel free to ask!
+
+=hr
+
+=footnote 1 All right smart arse. Everything in list context is a list, even if it is
+only one scalar, because that's just a list with one item in it. The point is that this statement is
+true regardless of the length of the returned list.
