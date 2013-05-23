@@ -71,7 +71,6 @@ sub handle_end {
 sub handle_paragraph {
     my $self = shift;
 
-    use Data::Dumper; print Dumper \@_;
     local $" = '';
 
     $self->{html} .= "\n<p>@_</p>\n";
