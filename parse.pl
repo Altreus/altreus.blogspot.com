@@ -18,7 +18,7 @@ my @files = (shift) // File::Find::Rule->file()->name('*.pc')->in('pod');
 for my $file (@files) {
     my $html_fn = $file =~ s/pod/html/r =~ s/\.pc$/.html/r;
 
-    if (!-e $html_fn or (stat $file)[9] > (stat $html_fn)[9]) {
+    if (!-e $html_fn or (stat $file)[9] < (stat $html_fn)[9]) {
         print "Skipping $file\n";
         next;
     }
