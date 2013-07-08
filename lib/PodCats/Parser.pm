@@ -123,8 +123,6 @@ sub handle_end {
 sub handle_paragraph {
     my $self = shift;
 
-    local $" = '';
-
     my $str = reduce { $a . ' ' . $b } make_str(@_, "\n");
     $str->apply_tag(0, $str->length - 1, p => 1);
     $self->{html} .= $str;
