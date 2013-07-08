@@ -21,9 +21,8 @@ for my $file (@files) {
     !-e $html_fn or (stat $file)[9] > (stat $html_fn)[9] or next;
 
     open my $html_out, ">", $html_fn or warn "Could not open $html_fn: $!" and next;
-    $pc->{html} = '';
     $pc->parse_file($file);
 
-    $html_out->print($pc->{html});
+    $html_out->print($pc->{html}->as_html());
 }
 

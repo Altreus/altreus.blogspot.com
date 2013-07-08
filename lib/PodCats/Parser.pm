@@ -19,35 +19,43 @@ our @BLOCKS = qw(
     
 );
 
+sub new {
+    my $self = (shift)->SUPER::new(@_);
+
+    $self->{html} = String::Tagged::HTML->new('');
+    return $self;
+}
+
 sub handle_command {
     my $self = shift;
 
-    my $command = $_[0];
-    my $default = $self->SUPER::handle_command(@_);
+    my $command = shift;
+    my $str = reduce { $a . ' ' . $b } make_str(@_, "\n");
 
     grep $_ eq $command, @COMMANDS or die "Not a command: $command";
 
     if ($command =~ /h\d/) {
-        $self->{html} .= qq(\n<$command>$default</$command>\n);
+        $str->apply_tag(0, $str->length - 1, $command => 1);
+        $self->{html} .= $str;
     }
     if ($command eq 'hr') {
-        $self->{html} .= "\n<hr />\n";
+        $self->{html} .= String::Tagged::HTML->new_raw('<hr />');
     }
     if ($command eq 'notice') {
-        $self->{html} .= qq(\n<p class="notice">$default</p>\n);
+        $str->apply_tag(0, $str->length - 1, p => { class => "notice" });
+        $self->{html} .= $str;
     }
-
     if ($command eq 'footnote') {
-        my $str = String::Tagged::HTML->new($default);
-        my $num = $default =~ /\d+/;
+        my $num = $str =~ /\d+/;
 
         $str->apply_tag($-[0], $+[0], a => { href => "#fn-$num", name => "#footnote-$num" });
-
-        $self->{html} .= $str->as_html(p => { class => 'footnote' }) . "\n";
+        $self->{html} .= $str->as_html(p => { class => 'footnote' });
     }
 
     if ($command eq 'item') {
-        $self->{html} .= qq(\n<li>$default</li>\n);
+        $str->apply_tag(0, $str->length - 1, li => 1);
+        $self->{html} .= $str;
+    }
 
     if ($command eq 'head') {
         if (! $self->{table_head}) {
@@ -91,7 +99,7 @@ sub handle_begin {
     my @params = @_;
 
     if ($command eq 'list') {
-        $self->{html} .= '<ul>';
+        $self->{html} .= String::Tagged::HTML->new_raw('<ul>');
     }
     elsif ($command eq 'table') {
         $self->{html} .= String::Tagged::HTML->new_raw('<table>' . "\n");
@@ -103,7 +111,7 @@ sub handle_end {
     my $command = shift;
 
     if ($command eq 'list') {
-        $self->{html} .= '</ul>';
+        $self->{html} .= String::Tagged::HTML->new_raw('</ul>');
     }
     elsif ($command eq 'table') {
         $self->{html} .= String::Tagged::HTML->new_raw('</table>' . "\n");
@@ -117,16 +125,18 @@ sub handle_paragraph {
 
     local $" = '';
 
-    my $str = reduce { $a . $b } @_;
-    $self->{html} .= "\n<p>@_</p>\n";
+    my $str = reduce { $a . ' ' . $b } make_str(@_, "\n");
+    $str->apply_tag(0, $str->length - 1, p => 1);
+    $self->{html} .= $str;
 }
 
 sub handle_verbatim {
     my $self = shift;
     my $para = $self->SUPER::handle_verbatim(@_);
 
-    my $str = String::Tagged::HTML->new($para);
-    $self->{html} .= "\n" . $str->as_html('pre') . "\n";
+    my $str = make_str($para, "\n");
+    $str->apply_tag(0, $str->length - 1, pre => 1);
+    $self->{html} .= $str;
 }
 
 sub handle_entity {
@@ -141,8 +151,8 @@ sub handle_entity {
     }->{$entity};
 
     if ($simple) {
-        my $str = String::Tagged::HTML->new("@content");
-        $str->apply_tag(-1, -1, $simple => 1);
+        my $str = reduce { $a . ' ' . $b } make_str(@content);
+        $str->apply_tag(0, $str->length, $simple => 1);
         return $str;
     }
 
@@ -156,20 +166,32 @@ sub handle_entity {
             $link = "https://metacpan.org/module/$link";
         }
 
-        my $str = String::Tagged::HTML->new("$text @content");
-        $str->apply_tag(-1, -1, a => { href => $link });
+        my $str = reduce { $a . $b } make_str($text, @content);
+        $str->apply_tag(0, $str->length, a => { href => $link });
         return $str;
     }
 
     # F for Footnote - links to the =footnote of the same $num
     if ($entity eq 'F') {
         my $num = $content[0];
-        my $str = String::Tagged::HTML->new($num);
+        my $str = make_str($num);
         $str->apply_tag(0, length $num, a => { href => "#footnote-$num", name => "#fn-$num" });
         return $str;
     }
 
-    return $self->SUPER::handle_entity($entity, @content);
+    if ($entity eq 'N') {
+        return String::Tagged::HTML->new_raw('<br/>' . "\n");
+    }
+
+    return make_str($self->SUPER::handle_entity($entity, @content));
 }
 
+sub make_str {
+    if (wantarray) {
+        return map { scalar make_str($_) } @_;
+    }
+    else {
+        return ref $_ ? $_ : String::Tagged::HTML->new($_) 
+    }
+}
 1;
