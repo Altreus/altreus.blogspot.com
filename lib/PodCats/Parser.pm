@@ -12,6 +12,7 @@ our @COMMANDS = qw(
     h1 h2 h3 h4 hr
     notice footnote
     item
+    head cell
 );
 
 our @BLOCKS = qw(
@@ -47,6 +48,40 @@ sub handle_command {
 
     if ($command eq 'item') {
         $self->{html} .= qq(\n<li>$default</li>\n);
+
+    if ($command eq 'head') {
+        if (! $self->{table_head}) {
+            $self->{html} .= String::Tagged::HTML->new_raw('<tr>');
+        }
+
+        $self->{tr_size}++;
+        $self->{table_head} = 1;
+
+        $str->apply_tag(0, $str->length - 1, th => 1);
+        $self->{html} .= $str;
+    }
+
+    if ($command eq 'cell') {
+        if (! $self->{tr_size}) {
+            warn "Don't know how big to make tables without =heads";
+            return;
+        }
+        if ($self->{table_head}) {
+            $self->{html} .= String::Tagged::HTML->new_raw('</tr>' . "\n");
+            delete $self->{table_head};
+        }
+
+        if (! $self->{cell}) {
+            $self->{html} .= String::Tagged::HTML->new_raw('<tr>' . "\n");
+        }
+        
+        $str->apply_tag(0, $str->length - 1, td => 1);
+        $self->{html} .= $str;
+
+        if (++$self->{cell} == $self->{tr_size}) {
+            $self->{html} .= String::Tagged::HTML->new_raw('</tr>' . "\n");
+            $self->{cell} = 0;
+        }
     }
 }
 
@@ -58,6 +93,9 @@ sub handle_begin {
     if ($command eq 'list') {
         $self->{html} .= '<ul>';
     }
+    elsif ($command eq 'table') {
+        $self->{html} .= String::Tagged::HTML->new_raw('<table>' . "\n");
+    }
 }
 
 sub handle_end {
@@ -66,6 +104,11 @@ sub handle_end {
 
     if ($command eq 'list') {
         $self->{html} .= '</ul>';
+    }
+    elsif ($command eq 'table') {
+        $self->{html} .= String::Tagged::HTML->new_raw('</table>' . "\n");
+        delete $self->{tr_size};
+        delete $self->{cell};
     }
 }
 
