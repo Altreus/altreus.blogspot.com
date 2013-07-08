@@ -13,7 +13,7 @@ my $pc = PodCats::Parser->new({
     delimiters => '[<{|'
 });
 
-my @files = File::Find::Rule->file()->name('*.pc')->in('pod');
+my @files = (shift) // File::Find::Rule->file()->name('*.pc')->in('pod');
 
 for my $file (@files) {
     my $html_fn = $file =~ s/pod/html/r =~ s/\.pc$/.html/r;
