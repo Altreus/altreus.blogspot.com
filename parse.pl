@@ -9,7 +9,7 @@ use lib 'lib';
 use File::Find::Rule;
 use PodCats::Parser;
 
-my @files = (shift) // File::Find::Rule->file()->name('*.pc')->in('pod');
+my @files = @ARGV ? @ARGV : File::Find::Rule->file()->name('*.pc')->in('pod');
 
 for my $file (@files) {
     my $pc = PodCats::Parser->new({
