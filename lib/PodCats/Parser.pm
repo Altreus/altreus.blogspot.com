@@ -49,7 +49,8 @@ sub handle_command {
         my $num = $str =~ /\d+/;
 
         $str->apply_tag($-[0], $+[0], a => { href => "#fn-$num", name => "#footnote-$num" });
-        $self->{html} .= $str->as_html(p => { class => 'footnote' });
+        $str->apply_tag(0, length $str, p => { class => 'footnote' });
+        $self->{html} .= $str;
     }
 
     if ($command eq 'item') {
