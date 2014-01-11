@@ -192,7 +192,7 @@ sub make_str {
         return map { scalar make_str($_) } @_;
     }
     else {
-        return ref $_ ? $_ : String::Tagged::HTML->new($_) 
+        return ref $_[0] ? $_[0] : String::Tagged::HTML->new($_[0]) 
     }
 }
 1;
