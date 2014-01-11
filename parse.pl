@@ -6,6 +6,8 @@ use 5.014;
 
 use lib 'lib';
 
+use Opt::Imistic;
+
 use File::Basename;
 use File::Find::Rule;
 use PodCats::Parser;
@@ -20,7 +22,7 @@ for my $file (@files) {
 
     my $html_fn = $file =~ s/pod/html/r =~ s/\.pc$/.html/r;
 
-    if (-e $html_fn and (stat $file)[9] < (stat $html_fn)[9]) {
+    if (not $ARGV{f} and -e $html_fn and (stat $file)[9] < (stat $html_fn)[9]) {
         print "Skipping $file\n";
         next;
     }
