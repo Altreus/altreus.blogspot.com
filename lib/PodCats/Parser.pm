@@ -49,6 +49,7 @@ sub handle_command {
         my $num = $str =~ /\d+/;
 
         $str->apply_tag($-[0], $+[0], a => { href => "#fn-$num", name => "#footnote-$num" });
+        $str->apply_tag($-[0], $+[0], sup => 1);
         $str->apply_tag(0, length $str, p => { class => 'footnote' });
         $self->{html} .= $str;
     }
@@ -175,6 +176,7 @@ sub handle_entity {
         my $num = $content[0];
         my $str = make_str($num);
         $str->apply_tag(0, length $num, a => { href => "#footnote-$num", name => "#fn-$num" });
+        $str->apply_tag(0, length $num, sup => 1);
         return $str;
     }
 
