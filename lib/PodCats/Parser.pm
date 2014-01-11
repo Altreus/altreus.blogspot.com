@@ -32,7 +32,7 @@ sub handle_command {
     my $self = shift;
 
     my $command = shift;
-    my $str = reduce { $a . ' ' . $b } make_str(@_, "\n");
+    my $str = reduce { $a . $b } make_str(@_, "\n");
 
     grep $_ eq $command, @COMMANDS or die "Not a command: $command";
 
@@ -130,7 +130,7 @@ sub handle_end {
 sub handle_paragraph {
     my $self = shift;
 
-    my $str = reduce { $a . ' ' . $b } make_str(@_, "\n");
+    my $str = reduce { $a . $b } make_str(@_, "\n");
     $str->apply_tag(0, $str->length - 1, p => 1);
     $self->{html} .= $str;
 }
@@ -156,7 +156,7 @@ sub handle_entity {
     }->{$entity};
 
     if ($simple) {
-        my $str = reduce { $a . ' ' . $b } make_str(@content);
+        my $str = reduce { $a . $b } make_str(@content);
         $str->apply_tag(0, $str->length, $simple => 1);
         return $str;
     }
