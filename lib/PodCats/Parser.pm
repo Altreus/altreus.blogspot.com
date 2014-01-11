@@ -135,7 +135,7 @@ sub handle_verbatim {
     my $para = $self->SUPER::handle_verbatim(@_);
 
     my $str = make_str($para, "\n");
-    $str->apply_tag(0, $str->length - 1, pre => 1);
+    $str->apply_tag(0, $str->length, pre => 1);
     $self->{html} .= $str;
 }
 
