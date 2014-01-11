@@ -6,6 +6,7 @@ use 5.014;
 
 use lib 'lib';
 
+use File::Basename;
 use File::Find::Rule;
 use PodCats::Parser;
 
@@ -13,7 +14,8 @@ my @files = @ARGV ? @ARGV : File::Find::Rule->file()->name('*.pc')->in('pod');
 
 for my $file (@files) {
     my $pc = PodCats::Parser->new({
-        delimiters => '[<{|'
+        delimiters => '[<{|',
+        post_name => basename($file, '.pc'),
     });
 
     my $html_fn = $file =~ s/pod/html/r =~ s/\.pc$/.html/r;

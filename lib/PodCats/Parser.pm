@@ -7,6 +7,7 @@ use parent qw(Pod::Cats);
 
 use String::Tagged::HTML;
 use List::Util qw(reduce);
+use Digest::SHA qw(sha1_hex);
 
 our @COMMANDS = qw(
     h1 h2 h3 h4 hr
@@ -22,6 +23,7 @@ our @BLOCKS = qw(
 sub new {
     my $self = (shift)->SUPER::new(@_);
 
+    $self->{sha} = sha1_hex $self->{post_name};
     $self->{html} = String::Tagged::HTML->new('');
     return $self;
 }
@@ -48,7 +50,10 @@ sub handle_command {
     if ($command eq 'footnote') {
         my $num = $str =~ /\d+/;
 
-        $str->apply_tag($-[0], $+[0], a => { href => "#fn-$num", name => "#footnote-$num" });
+        $str->apply_tag($-[0], $+[0], a => { 
+            href => "#fn-$self->{sha}-$num",
+            name => "#footnote-$self->{sha}-$num" 
+        });
         $str->apply_tag($-[0], $+[0], sup => 1);
         $str->apply_tag(0, length $str, p => { class => 'footnote' });
         $self->{html} .= $str;
@@ -175,7 +180,10 @@ sub handle_entity {
     if ($entity eq 'F') {
         my $num = $content[0];
         my $str = make_str($num);
-        $str->apply_tag(0, length $num, a => { href => "#footnote-$num", name => "#fn-$num" });
+        $str->apply_tag(0, length $num, a => { 
+            href => "#footnote-$self->{sha}-$num", 
+            name => "#fn-$self->{sha}-$num"
+        });
         $str->apply_tag(0, length $num, sup => 1);
         return $str;
     }
