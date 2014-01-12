@@ -111,6 +111,9 @@ sub handle_begin {
     elsif ($command eq 'table') {
         $self->{html} .= String::Tagged::HTML->new_raw('<table>' . "\n");
     }
+    elsif ($command eq 'quote') {
+        $self->{html} .= String::Tagged::HTML->new_raw('<blockquote>' . "\n");
+    }
     elsif ($command eq 'html') {
         $self->{raw} = 1;
     }
@@ -127,6 +130,9 @@ sub handle_end {
         $self->{html} .= String::Tagged::HTML->new_raw('</table>' . "\n");
         delete $self->{tr_size};
         delete $self->{cell};
+    }
+    elsif ($command eq 'quote') {
+        $self->{html} .= String::Tagged::HTML->new_raw('</blockquote>' . "\n");
     }
     elsif ($command eq 'html') {
         $self->{raw} = 0;
