@@ -48,7 +48,7 @@ sub handle_command {
         $self->{html} .= $str;
     }
     if ($command eq 'footnote') {
-        my $num = $str =~ /\d+/;
+        my ($num) = $str =~ /(\d+)/;
 
         $str->apply_tag($-[0], $+[0], a => { 
             href => "#fn-$self->{sha}-$num",
