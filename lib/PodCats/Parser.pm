@@ -111,6 +111,9 @@ sub handle_begin {
     elsif ($command eq 'table') {
         $self->{html} .= String::Tagged::HTML->new_raw('<table>' . "\n");
     }
+    elsif ($command eq 'html') {
+        $self->{raw} = 1;
+    }
 }
 
 sub handle_end {
@@ -125,10 +128,18 @@ sub handle_end {
         delete $self->{tr_size};
         delete $self->{cell};
     }
+    elsif ($command eq 'html') {
+        $self->{raw} = 0;
+    }
 }
 
 sub handle_paragraph {
     my $self = shift;
+
+    if ($self->{raw}) {
+        $self->{html} .= String::Tagged::HTML->new_raw(join '', @_);
+        return;
+    }
 
     my $str = reduce { $a . $b } make_str(@_, "\n");
     $str->apply_tag(0, $str->length - 1, p => 1);
@@ -138,6 +149,11 @@ sub handle_paragraph {
 sub handle_verbatim {
     my $self = shift;
     my $para = $self->SUPER::handle_verbatim(@_);
+
+    if ($self->{raw}) {
+        $self->{html} .= String::Tagged::HTML->new_raw(join '', @_);
+        return;
+    }
 
     my $str = make_str($para . "\n");
     $str->apply_tag(0, $str->length - 1, pre => 1);
