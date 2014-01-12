@@ -1,0 +1,560 @@
+In the post L<http://altreus.blogspot.com/2011/06/anatomy-of-types.html|The
+Anatomy of Types>, we talked about how some of Perl's data types are
+I<aggregate> types, while others are not. We differentiated them as whether the
+type holds one scalar, or any number of scalars. The scalar data type is not
+aggregate—it holds but one thing—and arrays and hashes are aggregate.
+
+This post is intended to explain how lists are used in the context of these data types.
+
+=h2 Lists
+
+Perl's aggregate data types are the array and the hash. Each is constructed from
+a list. The actual definition of a list covers quite a lot of cases—a lot of
+ways in which these can be constructed. However, the basic concept of "a list"
+is pretty simple; it's an ordered sequence of (zero or more) scalars.
+
+When you assign a value to a scalar you usually either populate it with input
+data or assign it a literal value:
+
+  my $input = <>
+  my $limit = 100;
+  my $user = 'user';
+
+When you assign a value to an aggregate data type you populate it with a list:
+
+  my @lines = <>;
+  my @days  = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
+  my %colour = (
+    red => '#ff0000',
+    green => '#00ff00',
+    blue => '#0000ff',
+  );
+
+A list is a sequence of scalars. The most basic way of constructing a list is
+with the comma operator.
+
+=h2 The Comma Operator
+
+Little did you, the new Perl developer, know, but the humble comma is also an
+operator like all others. It has low precedence, and its job is to concatenate
+two lists together. Things are lists when they are in list context.
+
+A common misconception is that parentheses form list context. After all, every
+time you see a list, you see parentheses! Not strictly true. The parentheses are
+simply there to make sure the comma operator happens first; it is the context of
+the whole expression that determines context. Stay with me and I'll try and make
+it clearer.
+
+To create a list we use the comma operator.
+
+  1, 2, 3, 4, 5, 6
+
+This fragment of code makes no sense on its own and thus needs some context to
+make sense. However, it is an expression—it's called that because it returns a
+value.
+
+Where we use the expression determines the value it returns.
+
+  my @array = (1, 2, 3, 4, 5, 6);
+
+This is the example we're familiar with. The context of the expression is
+determined by the assignment operator. When we assign to an array, the
+expression on the right-hand-side of the assignment operator is in list context;
+thus the comma operator in our expression is in list context, and hence creates
+a list.
+
+Why the parentheses? This looks perfectly innocuous and, indeed, perfectly
+legible to any newcomer to Perl:
+
+  my @array = 1, 2, 3, 4, 5, 6;
+
+But that's because the newcomer who reads it is not as educated as you are about
+to become, and is not aware that the assignment operator C<=> has I<higher
+precedence> than the comma operator. That means it's evaluated first. That means
+you get this:
+
+  (my @array = 1), 2, 3, 4, 5, 6;
+
+Because you are an honourable and competent Perl developer you have enabled
+warnings. Thanks to this, you are warned not once but five times that you have
+"Useless use of a constant in void context".
+
+In the latter example, no comma operator is evaluated in list context, because
+the assignment operator is evaluated first. It consumes the array (or hash) and
+the 1, and is then done. The remaining comma operators are then evaluated in
+I<void context>, which is the context anything is evaluated in when there is no
+operator or other syntax imposing a different context. Just saying C<2> is
+useless in void contextF<1>, so Perl tells you you have done it.
+
+In other list contexts, there are already parentheses:
+
+  for my $i (1, 2, 3, 4, 5, 6) { ... }
+
+And in some, there is no operator with higher precedence, so we don't need parentheses:
+
+  push @array, 1, 2, 3, 4, 5, 6;
+
+In scalar context (remember: this is determined by what you're assigning to),
+the comma operator will return its right-hand operand. That is to say, if you
+try to build a list with commas and assign it to a scalar, you will get the last
+item.
+
+  my $scalar = (1, 2, 3, 4, 5, 6); # $scalar = 6
+
+And of course if you forget the parentheses, the assignment happens first, and
+you get warnings.
+
+  my $scalar = 1, 2, 3, 4, 5, 6; # $scalar = 1
+
+Generally there is no reason to do this.
+
+=h2 Hashes
+
+We didn't mention hashes above, to keep it simple. Hashes are also aggregate
+data types and are also constructed from lists. However, the most common way of
+seeing a hash constructed in code is like this:
+
+  my %colour = (
+    red => '#ff0000',
+    green => '#00ff00',
+    blue => '#0000ff',
+    ...  # etc
+  );
+
+What is this? In some languages you will find that there is a specific syntax
+required to create a hash (or associative array—but that's a
+L<http://altreus.blogspot.co.uk/2011/06/its-as-if-they-thought-it-through.html|different
+rant>) but
+in Perl the syntax is merely I<convenience>. There is nothing particularly
+special about the syntax above; you can construct a hash from any list (but of
+course you will be warned if you use an odd number of elements, since hashes are
+paired).
+
+  my %colour = (
+    'red',  '#ff0000',
+    'green', '#00ff00',
+    'blue', '#0000ff',
+    ...  # etc
+  );
+
+This operator C[=>] is known as the I<fat comma>, because it has the same effect
+and precedence as the comma, but it is 2 characters and, hence, fat. Other than
+that, you'll notice the other difference is that in the first example I didn't
+have to quote the string keys. The syntactic benefit of the fat comma is that it
+quotes the bareword to its left for you, which covers the majority of cases, and
+means you only have to quote keys that don't look like identifiers.
+
+But, ultimately, you have still created a list. You still have to use
+parentheses, and as we will learn further down, you can construct the hash by
+using anything that returns a list.
+
+=h3 "Construct"?
+
+Yes. We use this term when we give a variable a value. We might say we use this
+term when we create a new variable, but of course we can reconstruct an existing
+variable at any time.
+
+When we declare a new array or hash but don't perform an assignment at the same
+time, we are implicitly constructing it from an empty list.
+
+  my @array;        # These two
+  my @array = ();   # are equivalent
+  my @array = 1 .. 5;            # These two are
+  my @array = (1, 2, 3, 4, 5);   # also equivalent
+
+Constructing a hash does impose the requirement that the provided list be even
+in length, or else a warning will be generated. Otherwise, there is no special
+requirement to constructing a hash.
+
+  my %hash;        # These two
+  my %hash = ();   # are equivalent
+  my %hash = 1 .. 6;               # These two are
+  my %hash = (1, 2, 3, 4, 5, 6);   # also equivalent
+  my %hash = ( 'a', 1, 'b', 2 );   # And these two are 
+  my %hash = ( a => 1, b => 2 );   # also equivalent
+
+=h2 List Unpacking
+
+List unpacking is the principle of doing what you just did, but with a list on
+the left hand side of the assignment operator as well as the right.
+
+Just to confuse you, parentheses on the left hand side of the assignment
+operator I<do> create list contextF<3>.
+
+List unpacking takes sequential items from the source list, and assigns them in
+order into the scalar or aggregate values in the destination. This example
+involves just scalars:
+
+  my ($first, $second) = @days;
+
+In this example, the rest of C<@days> is ignored if it is more than 2 items
+long. C<$first> and C<$second> get C<undef> if C<@days> is not long enough to
+populate them. Using our example from earlier we will expect C<$first> and
+C<$second> to have C<'Mon'> and C<'Tue'> in them, respectively.
+
+This next example uses one scalar and one aggregate. If any of the items on the
+left is an array, it gobbles up all the rest of the list on the right.
+
+  my ($mon, @tue_to_sun) = @days;
+
+That means this doesn't work:
+
+  my ($mon, @tue_to_sat, $sun) = @days;
+
+While the Perl hackers could feasibly make this work, there are logical problems
+that are essentially unsolvable. Since Perl uses the concept of DWIM as much as
+possible, it is better to avoid trying to make this work than to make it not do
+what you meant.
+
+Logically, this brings us back to the copying of an array that we've seen
+before, simply by not using that scalar:
+
+  my (@days_copy) = @days;
+
+Because the C<@days_copy> puts the assignment operator in list context anyway,
+we can lose the parentheses, and we're back to square one.
+
+You can also swap existing variables around using the same syntax. Here's an
+example that makes sure C<$x> is always greater than (or equal to)
+C<$y>:
+
+  if ( $y > $x ) {
+    ($x, $y) = ($y, $x);
+  }
+
+This list unpacking idea is usually used to fetch the parameters to a function
+out of the special array C<@_>. We'll see that later.
+
+=h2 Interchangeability
+
+The fact that most newcomers to Perl don't immediately grasp is that whenever a
+list is required, either an array or hash can be used in its place. Both an
+array and a hash, used as a list, will yield their contents as such a list.
+Being unordered, the list you get out of a hash may not be in the same order as
+the list you put into the hash, but it'll have the same contents, and the pairs
+will maintain their association.
+
+In that vein, all of the following are valid, albeit of debatable usefulness.
+
+  my @dirs = ('.', '..', '/', '/home');
+  my %pointless_hash = @dirs;
+  my @dirs_copy = @dirs;
+  my @hash_pairs = %pointless_hash;
+  my @useless_variable = (@dirs, @hash_pairs, @dirs);
+  my $count = @dirs;   # You know about this of course
+  
+  push @dirs, @dirs;
+  push @dirs, %pointless_hash;
+  
+  for my $item (@dirs) { ... }
+  for my $key_or_value (%pointless_hash) { ... }
+  
+  for my $item ('/opt', @dirs, 1, 2, 3, 
+  @hash_pairs, %pointless_hash, $count) {
+    ...
+  }
+
+Both the aggregate data types simply become a list again when you use them as
+lists. Of course, a scalar becomes a list as well when you use it as a list:
+
+  my $cur_dir = '.';
+  my @dirs_to_scan = $cur_dir;
+
+In the previous example you can see the comma operator being used with scalars,
+literals (also scalar, of course), arrays and hashes, all at once. Although a
+confusing and contrived example, it endeavours to show that the aggregate data
+types can be used in any list situation and will behave consistently; i.e., as a
+list of the scalars they contain.
+
+=h2 The Compound Data Structure Confusion
+
+All this helps to explain the confusion of newcomers to Perl when it comes to
+trying to create complex data structures, which is when they don't use
+references to make hashes or arrays of hashes or arrays.
+
+With this new-found knowledge, it should be clear what is wrong with the following code:
+
+  my @dirs = ('.', '..', '/', '/home');
+  my %options = (
+    dirs => @dirs
+  );
+
+Of course the hash constructor is a list. The fat comma C[=>] is just a normal
+comma with style, and the array is just an array! It's in list context, so it
+behaves consistently—i.e. just as we've seen it behave so far.
+
+The above hash assignment is exactly equivalent to this:
+
+  my %options = (
+    'dirs', '.', '..', '/', '/home'
+  );
+
+... which is a 5-element list—which is a warning, as we already know. This
+problem is solved by the use of references, which would turn, in this example,
+C<@dirs> into a single scalar, essentially wrapping up the whole array
+as a single value in the list.
+
+=h2 Other List Constructors
+
+The comma operator is not the only way of constructing a list. The range
+operator .. constructs a list of all numbers between two integers, or all
+alphabetically sequential strings between two strings of a particular length.
+
+  my @array = 1 .. 6;
+  my %hash = 1 .. 6;
+  my @letters = 'a' .. 'z';
+
+The C<qw> operator makes a list of strings by splitting on whitespace:
+
+  my @animals = qw/cat mouse dog rat monkey/;
+  my %genus = qw/
+    cat felis
+    dog canis
+    mouse mus
+  /;
+  use Module qw/this is a list as well/;
+
+Note that none of these list constructors requires parentheses—because there
+isn't a comma in the syntax. You can use parentheses—C<qw()>—but that is the
+syntax of the C<qw> operator, and not treated as actual parentheses at all.
+
+=h2 C<keys> and C<values>
+
+A hash is an aggregate data structure that is paired. Half of its scalars are
+keys, and the other half are the values associated with those keys.
+
+You can query the hash for either list separately from the other. Both C<keys>
+and C<values> return a list.
+
+  my %colour = (
+    red   => '#ff0000',
+    green => '#00ff00',
+    blue  => '#0000ff',
+  );
+  my @colour_names = keys %colour;
+  my @colour_hexes = values %colour;
+  
+  for my $colour_name ( keys %colour ) {
+    my $hex = $colour{$colour_name};
+    ...
+  }
+
+As long as you don't change the hash, both C<keys> and C<values> will return the
+list in the same order—that is to say, if you were to interleave them again, the
+pairs would match up.
+
+=h2 C<map>, C<grep> and C<sort>
+
+These three operators act on lists and return another list. Everything you have
+seen up to now applies to both the list you input, and the list you get back.
+
+That is to say, wherever you use a list, you can use C<map>,
+C<grep> or C<sort> on that list instead.
+
+  my $dir = '.';
+  opendir my $dirh, $dir;
+  my @files = readdir $dirh; #all files
+
+  # loop all files
+  for my $file ( @files ) {...} 
+
+  # loop some files
+  for my $file ( grep { $_ !~ /\.\.?/ } @files ) {...} 
+
+  # loop files in alphabetical order
+  for my $file ( sort @files ) {...} 
+
+  # loop files without their extensionsF<4>
+  for my $file ( map { s/\..+$//r } @files ) {...} </pre>
+
+We can use C<@files> as a list directly; or we can perform a sort, map or grep
+on it to return a different list. C<sort> alters order of the elements; C<map>
+alters the elements themselves; and C<grep> reduces the number of elements.
+
+Since everything at this point is a list, you can chain them together.
+
+  for my $file ( sort map { s/\..+$//r } grep { $_ !~ /\.\.?/ } @files ) { ... }
+
+The input list for C<sort> is the output list of C<map>; the input list to
+C<map> is the output list from C<grep>; and the input list to C<grep> is the
+list you get by using an array in list context.
+
+=h2 Functions
+
+Now that we've seen lots of different uses of lists, arrays and hashes in list
+context, and we've seen a few different ways of constructing them,we can tackle
+the final confusion of newcomers to Perl: function arguments.
+
+When you pass arguments to a function they appear in the special array C<@_> inside
+the function. Let's look at how we call a function.
+
+  sub add {
+    my ($x, $y) = @_;
+    return $x + $y;
+  }
+
+  add 1, 2;  # returns 3
+
+The parameter list to a function is in list contextF<5>. It is a parameter
+F<list>, after all. The parameters to the add function above are C<1> and C<2>.
+Look familiar? It's the comma operator in list context, creating a list out of
+the scalars 1 and 2. There are no parentheses because they are optional for
+function calls in Perl; there is no other operator on this line, so we don't
+need to override the precedence of the comma operator like we did at the start
+of the post when constructing aggregates.
+
+Since the parameter list is Just A List this means everything we've talked about
+so far also applies.
+
+  sub add {   
+    my ($x, $y) = @_;
+    return $x + $y; 
+  } 
+  
+  my @numbers = (1, 2); 
+  add @numbers;  # returns 3
+
+The array C<@numbers> is used as a list because it is in list context,
+and hence its values are sent into the function and appear, as usual, in
+C<@_>.
+
+This, therefore, explains how you can do things like this:
+
+  sub cat_noise {
+    my %options = @_;
+  
+    if ($options{meow}) {
+      say $options{meow};
+    }
+    else {
+      say "Meow.";
+    }
+  } 
+  
+  my %opts = qw/ meow purr /; 
+  cat_noise( %opts );
+
+I put parentheses in here for clarity, but let's reduce this hideously contrived
+example using the rules we've already mapped out so far.
+
+First, we know that the traditional way of constructing a hash, with C[=>], is
+just a tidy way of constructing a list. So a hash is just constructed from a
+list.
+
+We also learned that C<qw> is an operator that creates a list by splitting on
+whitespace, and can use any character to delimit its argument. This time we
+chose C</>. This, therefore, is what Perl sees:
+
+  my %opts = ('meow', 'purr');
+
+We then send C<%opts> into C<cat_noise>. Again, we've seen that if you use a
+hash where a list is expected, a list is what you get. So Perl unpacks the hash
+again and sends the resulting list to C<cat_noise>:
+
+  cat_noise( 'meow', 'purr' );
+
+Inside C<cat_noise>, the first thing we do is unpack the list provided by C<@_>
+into an aggregate data type—a hash called C<%options>. Then C<%options> is the
+basis for the body of the function, wherein we check for the existence of the
+C<meow> key, and say its value if it exists, and "Meow." if not.
+
+We can see therefore that the way we pass a hash into a function is to use it as
+a list, and then convert it back into a hash by using C<@_> as a list.  Some
+people advocate passing this as a hash I<ref> so that you avoid constructing a
+new hash, which is theoretically slightly faster.
+
+=h2 More Common Examples
+
+=h3 A hash from a map
+
+Sometimes you may see a construct like this:
+
+  my %uniq = map { ($_ =&gt; 1) } @array;
+  my @array_uniq = keys %uniq;
+
+What is happening here? As we know, C<map> returns a list and you
+construct a hash from a list. C<map> also I<accepts> a list, and
+you can use an array as a list too. In the block we give to C<map>, we
+actually also return a list—a 2-item list. That means that the list we get
+I<out> of C<map> will have 2 items for every 1 item we put into
+it. That one item is represented by the C<$_>, and the second item is
+simply C<1>.
+
+So if C<@array> were a list of colours:
+
+  my @array = qw( red green blue yellow red );
+
+Then Perl would create a 2-item list for each of these, and our output would be:
+
+ ( red => 1, green => 1, blue => 1, yellow => 1, red => 1 );
+
+And so we create the hash:
+
+  my %uniq = ( red => 1, green => 1, blue => 1, yellow => 1, red => 1 );
+
+Since the key 'red' is repeated, the latter is accepted as the I<de facto>
+pairing—not that it matters because both values are 1—but 'red' still only
+appears once in the hash (because keys are unique).
+
+Now if we run C<keys> on it, we get back a list that contains the unique
+elements of the original C<@array>
+
+  my @array_uniq = keys %uniq; # red, green, blue, yellow
+
+=h3 Default options
+
+That leads us onto this:
+
+  my %opts = (%defaults, %options);
+
+This ought to now be clear. Both hashes are expanded to their representative
+lists; the contents of the C<%options> hash must come after the
+contents of the C<%defaults> hash. That means their values take
+precedence, and any missing values in C<%options> are still in the
+list because of C<%defaults>.
+
+=h2 Further Considerations
+
+Left as an exercise to the reader are the ideas of building an array bit-by-bit
+and using that as a function parameter list, and of returning a list from a
+function and using I<that> as another function's parameter list.
+
+Having seen what happens when you try to put an array or a hash into another
+array or hash—the list-flattening effect—you should now read
+L<http://perldoc.perl.org/perlreftut.html|tutorials about references>.
+These are the mechanism by which the entire array or hash can be stored as a
+single scalar, thus providing the logical boundaries between the list that is in
+the array, and the list that is in the sub-array. Or hash.
+
+The technically-minded may wish to now read about
+L<http://perldoc.perl.org/perlsub.html#Prototypes|prototypes>, being a
+way of changing the way Perl understands the parameter list you provide. The
+curious reader should be aware that prototypes are not a general tool, and can
+cause much confusion and inconsistency in the way you and others expect things
+to work if they are misused.
+
+=footnote 1 It may confuse you to see that C<1;> is often used to return from
+functions and, indeed, from modules. Note that functions are evaluated in the
+context of where they are called, which means this I<could> be evaluated in a non-void
+context. Therefore, you do not get a warning about thatF<2>. This is true of modules
+too, which is why you can use any true value as the module's return
+value.
+
+=footnote 2 In fact you don't get a warning about C<1;> because 0 and 1 are
+exempt from this warning (see
+L<http://perldoc.perl.org/perldiag.html|perldiag>). However, the warning does
+apply to all other constants, including strings.
+
+=footnote 3 If you don't use the parentheses you get scalar context when
+assigning to a scalar, and the comma on the left suffers the same problems as it
+did before, i.e. the precedence is wrong. If the item immediately before the
+equals sign is a scalar, you get scalar context, which is the last element when
+you use the comma operator: C<my $x = (1, 2, 3, 4, 5, 6); # x = 6>
+
+=footnote 4 The /r in the substitution here (s///r) is introduced in Perl 5.14,
+and is used to return the altered string instead of altering the actual string.
+Prior to 5.14, you can do this by applying the regex to a copy of the string:
+C<map { (my $x = $_) =~ s/\..+$//; $x } LIST>
+
+=footnote 5 Function prototypes are out of the scope of this post.
+

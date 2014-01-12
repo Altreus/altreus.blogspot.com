@@ -1,0 +1,59 @@
+I wonder why we have separate arrays and hashes in Perl. Other languages don't
+do it. After all, the principal difference between an array and a hash is that
+an array references its items by ordinal position and hashes use strings to
+name them. A hash could surely be conflated with an array simply by using
+integers as the string keys - especially since Perl can use strings and
+integers interchangeably.
+
+We would have to make changes, but all it would really need is a way of
+detecting when the user intended to use an ordinal array and when the user
+intended to use an associative array. This should be easy enough: all we need
+to do is check whether all the keys are sequential and start at zero, and we
+know it's an ordinal array. To accommodate the fact this may be a coincidence,
+we can create a second set of functions so that the user can specify that even
+though the array I<appears> to be ordinal it is actually just that the keys
+I<happen> to be numeric and I<happen> to be in order starting from zero. We'd
+also have to change the way sort works, in fact creating two functions: one
+function that orders an ordinal array and re-creates the keys when the values
+are in their new positions, and one function that, having sorted the array by
+value, makes sure the keys still refer to the same value. Of course, sorting
+integers as strings returns a different order from sorting integers as integers
+('10' is alphabetically between '1' and '2'), so we would need a C<keys>
+function that knew whether to return strings or integers so that we know, when
+sorting the list of keys, whether to sort them as strings or integers.
+
+Splicing would also require two functions, of course. It doesn't really make
+sense to splice a nominal array because there is no inherent order to it; but
+since a fundamental tenet of structural programming is that if you make two
+things the same, you must treat them the same, then we have to I<make> it make
+sense. Since splicing is all about removing things by their position (it's very
+easy to remove a key from a nominal array: just remove it), we need to give
+associative arrays an internal order. Or possibly just whinge when we use a
+thing that doesn't look like an ordinal array in splice, thereby affirming a
+difference between ordinal and associative arrays that we are desperately
+trying to pretend doesn't exist.
+
+We'd also have to determine what to do when, for example, someone creates an
+entry in an array by giving it an ordinal position that doesn't exist. Do we
+create an array of suitable length and fill it with bits of emptiness in order
+to maintain the illusion that this array is ordinal? Or do we create it as an
+associative array with a single numerical key? What happens if someone creates
+key C<[2]>, then key C<[0]>, then key C<[1]>? Do we sneakily go back and
+pretend we knew they meant this to be an ordinal array from the beginning, or
+do we treat this as an associative array and annoy the hell out of the user,
+who expected an ordinal array with three entries?
+
+And then finally an extra function is needed so that we can refer to elements
+by their ordinal position even if it's not a real ordinal position: after all,
+C<-1> is a valid associative array key but in an ordinal array it means "the
+last element" like it does in common C functions like substr, so we'd have to
+create a way of referencing the array backwards without accidentally confusing
+a negative index with a string key.
+
+Oh yes. That's why.
+
+=h3 Further reading
+
+Here's a Wikipedia link: L<http://en.wikipedia.org/wiki/Waterbed_theory> — if
+anyone can find TimToady's paper on this on the interwebs, I'd like to link to
+that from here too, so I'd be grateful for that.

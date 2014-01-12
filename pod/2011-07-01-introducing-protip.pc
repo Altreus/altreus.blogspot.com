@@ -1,0 +1,45 @@
+A while ago I had a long, protracted conversation with my manager trying to
+convince him that our company should have a github account for select
+open-source projects we, as a company, want to release into the wild, on the
+basis that it would be good PR et cetera. That conversation went like this:
+
++quote
+
+Me: I think we should put some open-source projects on github
+
+Him: Good idea. People can download this stuff anyway when it's on the web so
+we might as well put it out there on purpose.
+
+-quote
+
+It is honestly quite a pleasure to work for a manager savvy enough to hold this
+opinion, rather than the sort of manager you hear about who, in spite of all
+observational evidence, maintains a world view that the company's code is its
+own and the correct answer lies in various obfuscation and encryption
+techniques that entirely defeat the point of the code being secured in
+the first place.
+
+So without further ado I present the project that spawned this highly modern
+thinking, L<https://github.com/propcom/Protip|Protip>.
+
+This is a jQuery plugin intended to make a tooltip that is actually useful.
+Having tried many other tooltips I found that most suffered from the same basic
+problem: The method of deciding I<what> should be in the tooltip (and what the
+tooltip should look like) was highly arbitrary, or at least difficult to
+shoehorn into your average document, to the extent that the majority of your
+tooltip logic was creating the tooltips in the right place so that the plugin,
+which is meant to save you work, can see them. By which time you might as well
+have written your own tooltip anyway. So I did that.
+
+Protip can take a function as the tooltip specifier, and the function returns a
+jQuery object. Simple as that. There are a fewF<1> predefined such functions
+but generally you tell the plugin what and where your tooltip is.
+
+It is currently a bit hastily written and hence there is a certain quantity of
+Javascripty scope unsureties going on, but nothing a bit of a refactor won't
+solve.
+
+Here it is again. Go nuts. Feedback appreciated in the form of patches or pull
+requests. L<https://github.com/propcom/Protip>
+
+=footnote 1 1

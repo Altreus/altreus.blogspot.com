@@ -1,0 +1,308 @@
+A chief confusion of people new to Perl is the apparently disconnected syntax
+used to refer to variables. Of particular consternation is the syntax used for
+accessing arrays and hashes: especially slices thereof. This seems to be
+because the creation of and use of arrays and hashes is taught at a simpler
+level than the level of understanding required to actually see how they work.
+
+Here's a table that shows some variables, as they are used, and how they divide
+up. It also shows the number of items each expression will return.
+
++html
+
+  <table>
+  <tr>
+    <th colspan="3">Expression</th>
+    <th></th>
+  </tr>
+  <tr>
+    <th>Sigil</th>
+    <th>Identifier</th>
+    <th>Subscript</th>
+    <th>Number of items</th>
+  </tr>
+  <tr>
+    <td>$</td>
+    <td>scalar</td>
+    <td></td>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td>%</td>
+    <td>hash</td>
+    <td></td>
+    <td>Many pairs</td>
+  </tr>
+  <tr>
+    <td>@</td>
+    <td>array</td>
+    <td></td>
+    <td>Many</td>
+  </tr>
+  <tr>
+    <td>$</td>
+    <td>array</td>
+    <td>[0]</td>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td>$</td>
+    <td>hash</td>
+    <td>{key}</td>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td>@</td>
+    <td>array</td>
+    <td>[0,1,2]</td>
+    <td>Many</td>
+  </tr>
+  <tr>
+    <td>@</td>
+    <td>hash</td>
+    <td>{'key1', 'key2'}</td>
+    <td>Many</td>
+  </tr>
+  </table>
+
+-html
+
+=h2 1. The Sigil
+
+=h3 C<$>
+
+C<$> refers to a scalar. A scalar is a single, atomic item. Its contents cannot be
+divided without applying further processing to the scalar itself. Whenever an
+expression begins with a C<$>, it is a scalar, and there is one item.
+
+=h3 C<@>
+
+C<@> refers to more than one scalar, in some order. Without a subscript, it refers
+to an array; otherwise it simply refers to a list. Saying it is "in order" means
+that we can identify any item within the list by its numerical position; it also
+means that there is a first, second, nth and last element in it.
+
+=h3 C<%>
+
+C<%> refers to a hash. A hash is also a collection of scalars, but there is no order
+to them. Rather than each scalar being in a known position in a list, instead
+half of the scalars are referred to by the other half. The "other half" are all
+I<strings> and are called I<keys>. If the C<%> is used you know that you are
+referring to a set of items that alternate between keys and values.  Having no
+order, it is therefore meaningless to talk about the first, second, I<n>th, or last
+element of the hash.
+
+Apply these rules to the table above. See that every expression whose sigil is a
+C<$> gives us 1 item; every expression whose sigil is C<@> gives us many (zero or more)
+items; and every expression whose sigil is C<%> gives us many paired items.
+
+=h2 2. The identifier
+
+The identifier is the name of the variable. Without its sigil it is fairly
+meaningless because it could refer to anything F<1>. With its sigil, suddenly we
+know what form of variable we are talking about - scalar, array or hash. And
+with a sigil and a subscript, we know yet again that we are talking about one or
+many scalars, and which type of variable the identifier refers to.
+
+Here's the tricky part. Each identifier can refer to I<all types>. It is
+perfectly legitimate (albeit often quite a bad idea) to have I<all three> of
+C<$var>, C<@var> and C<%var> in the same scope at the same time.
+
+This is allowable because it is impossible for there to be ambiguity. There is
+no crossover in either of the tables below, either within themselves or between
+them. A combination of sigil and subscript can tell us exactly which type of
+variable the identifier refers to, and therefore Perl simply allows for all
+types to be under a single name. Thus:
+
++html
+
+  <table>
+  <tr>
+    <th>Expression</th>
+    <th>Looks for</th>
+  </tr>
+  <tr>
+    <td>$var</td>
+    <td>$var</td>
+  </tr>
+  <tr>
+    <td>@var</td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>%var</td>
+    <td>%var</td>
+  </tr>
+  <tr>
+    <td>$var[0]</td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>$var{key}</td>
+    <td>%var</td>
+  </tr>
+  <tr>
+    <td>@var[0,1]</td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>@var{'key1', 'key2'}</td>
+    <td>%var</td>
+  </tr>
+  </table>
+
+-html
+
+=h3 3. The Subscript
+
+When you have an aggregate data structure (array or hash) you know that you are
+talking about possibly multiple scalars at once. Arrays are accessed by
+selecting an item by its position, and hashes are accessed by using the string
+key we associated with the scalar.
+
+Armed with the knowledge about what the sigil means we can consult the table
+above to pull apart the familiar way of accessing arrays and hashes to get an
+item out:
+
+  my $first_item = $things[0];
+
+We know C<$first_item> is a scalar because it has a C<$>. We know C<$things[0]>
+is a scalar because it has a C<$>.
+
+  my $first_name = $person{first_name};
+
+We know C<$first_name> is a scalar because it has a C<$>. We know
+C<$person{first_name}> is a scalar because it has a C<$>.
+
+Assigning a scalar to a scalar makes perfect sense. Although it appears that the
+sigil has changed on the array and hash, what we actually see is that the
+I<identifier> of the array is 'array'; the I<identifier> of the hash is 'hash';
+and the choice of sigil is effected by I<how much of the data structure we want>.
+
+=h4 Array and Hash Slices
+
+Arrays and hashes are aggregate data types, which means they contain multiple
+scalars. It is reasonable therefore to expect we can request more than one item
+from them at the same time.
+
+Since one item is referred to with the $ sigil, and we used a C<$> to access a
+single item from the aggregate, then we can simply use C<@> to refer to multiple
+items from the same aggregate.
+
+  my @both_names = @person{'first_name', 'last_name'};
+
+Observe that we can access two values from the hash by supplying both keys as a
+list in the subscript and using C<@> instead of C<$>. This of course applies to
+any quantity of keys, and also applies to arrays
+
+  my @relevant_things = @things[0,3,5];
+
+This action of taking several selected elements from an aggregate is called slicing.
+
+B<A warning about hash slices>
+
+Remember to use the C<@> instead of the C<$> when taking a hash slice. The
+syntax of putting a list in the subscript to get a scalar refers to a
+long-deprecated feature that you never want to use intentionally.
+
+=h4 Working Backwards
+
+We can work backwards from a line of code to know what we are talking about.
+Perl has to do this, because we change the sigil depending on how many things
+we're talking about.
+
+To determine I<where> a scalar comes from, we need to look at the subscript.
+Arrays and hashes don't tend to have names that immediately make it obvious that
+they are arrays or hashes. But subscripts have syntax that resolves this
+cleanly.
+
+An identifier followed by brackets - C<[ ]> - refers to an array. An identifier
+followed by braces - C<{ }> - refers to a hash. An identifier followed by no
+subscript refers to the exact type the sigil refers to. The I<sigil> refers to
+the type of the I<returned> value. The I<identifier>, coupled with the
+I<subscript>, tells us what type of data structure the value comes from.
+
+Given the identifier 'I<var>', the following table helps explain where the data
+comes from in various situations:
+
++html
+
+  <table>
+  <tr>
+    <th>Sigil</th>
+    <th>Subscript</th>
+    <th>Looks for</th>
+  </tr>
+  <tr>
+    <td>$</td>
+    <td></td>
+    <td>$var</td>
+  </tr>
+  <tr>
+    <td>@</td>
+    <td></td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>%</td>
+    <td></td>
+    <td>%var</td>
+  </tr>
+  <tr>
+    <td>$</td>
+    <td>[ ]</td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>$</td>
+    <td>{ }</td>
+    <td>%var</td>
+  </tr>
+  <tr>
+    <td>@</td>
+    <td>[ ]</td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>@</td>
+    <td>{ }</td>
+    <td>%var</td>
+  </tr>
+  </table>
+
+-html
+
+This confirms our rule: that without a subscript, the sigil determines the
+variable we seek; otherwise, the subscript does.
+
+This can be rationalised simply. If we use a subscript, we are requesting only a
+I<part> of the aggregate variable in question; i.e. a selection of one or
+several of the scalar values it contains. This means that, if a subscript is
+present, we can use it to determine where the data should come from. If we don't
+use a subscript, it is therefore reasonable we actually intended to refer to the
+aggregate itself - and this is indeed the case. But in all cases, the sigil
+still determines the I<type> of data we get back, be it a scalar or a list or a
+paired list.
+
+Scalars are not aggregate, so there is never a subscript that will translate
+into a scalar. That's why 'C<$var>' appears only once in the table.
+
+=h2 Further reading
+
+So far we have talked about lexical variables (think "braces"). There are two
+other types of variable: package and global. Package variables are accessed by
+their fully-qualified name (C<$Package::var>) from other packages, or the same as
+above from within the package. Global variables - other than the built-in set -
+should be avoided.
+
+Read L<http://perldoc.perl.org/perlmod.html#Symbol-Tables|Symbol Tables in
+perlmod> for information on package variables. And you could do worse than read
+about
+L<http://perldoc.perl.org/perldata.html#Typeglobs-and-Filehandles|typeglobs>, a
+special internal data type for referring to the entire set of types available in
+the symbol table.
+
+=footnote 1 Actually, it can't refer to anything at all. An identifier without a
+sigil is usually interpreted as subroutine call, but can result in ambiguity
+that causes strictures to complain about barewords. Nevertheless, a (named)
+subroutine is actually a package variable, and we are talking about lexicals
+here.
