@@ -1,0 +1,239 @@
+In Perl it is necessary to declare a variable with C<my> (or C<our>) before
+using it. This behaviour is enabled with the C<strict> pragma; and recently it
+has become the default.
+
+Why?
+
+Today's theme explores the idea that, when writing code, there is meaning in
+every statement. A good portion of code will comprise statements that actually
+implement the logic that causes the program to do what it does; but often
+overlooked are the statements such as these C<my> and C<our> declarations, which
+explain your intention for the variable before it's ever even used.
+
+We'll look at some of the simpler reasons behind it, and later on we shall look
+at the less apparent ones.
+
+=h2 Requesting
+
+In these cases the intention you are declaring is simple: "I want to use this
+symbol."
+
+The humble typo is the most obvious reason espoused for requesting new
+variables: it stops you using something else.  But in Perl this actually covers
+at least three separate types of typo, all of which are solved by declaring
+things before you use them.
+
+=h3 Misspelling it later
+
+Misspelling the variable later on is the most common failure.
+
+  my $hard_to_spell_name;
+  $hard_tp_spell_name = 'cats';
+
+Z<>
+
+  Global symbol "$hard_tp_spell_name" requires explicit package name at script.pl line 3.
+  Execution of script.pl aborted due to compilation errors.
+
+Saying you want to use symbol A and then using symbol B is an error it is
+trivial to pick up on.
+
+=h3 Misspelling it now
+
+This is less common because you usually spell the variable name right when you
+create it because you've just spent ages trying to come up with the name in the
+first place. It's the same declaration, except you meant B and B, rather than A
+and A.
+
+  my $hard_tp_spell_name;
+  $hard_to_spell_name = 'cats';
+
+Z<>
+
+  Global symbol "$hard_to_spell_name" requires explicit package name at script.pl line 3.
+  Execution of script.pl aborted due to compilation errors.
+
+=h3 Forgetting
+
+This requires a module, but declaring your intent allows the C<warnings> pragma
+to tell you when you didn't use a variable you asked for.
+
+Install C<warnings::unused> from CPAN in L<http://cpanmin.us|the usual way>.
+
+  use warnings::unused;
+  use strict;
+  use warnings;
+  
+  my $foo;
+  my $bar = 'cats';
+  
+  say $bar;
+
+Z<>
+
+  Unused variable my $foo at script.pl line 5.
+
+=h3 Typing
+
+By this I mean the type of the variable, not the typing you're doing when you
+make a typo.
+
+In this case, you've declared an array and then accidentally used a scalar, or
+forgotten it's not an arrayref, or something along those lines. This is also the
+sort of protection you get from languages with a more C-style typing system,
+where you have to declare a variable by defining its symbol name and its type
+(C<int i;>). Basically even though you spelled the symbol name right, you're
+using it wrongly.
+
+  my @array_of_cats;
+  push @$array_of_cats, 'cat';
+
+Z<>
+
+  Global symbol "$array_of_cats" requires explicit package name at script.pl line 3.
+  Execution of script.pl aborted due to compilation errors.
+
+"You're using it wrongly" is a perfectly reasonable statement here. That's
+because I<you declared what "right" is>: "wrongly" is directly determined by
+your own C<my> statement.
+
+=h2 Overwriting
+
+=h3 Reuse
+
+If you are required to declare your variables the first time you use them then
+you will always do so. This means that the keyword C<my> is not only used to
+declare that a variable is supposed to be available, but also to declare that
+the variable is supposed to be I<new>.
+
+Hence, if you try to introduce a variable that already exists, it tells you off,
+and thus you avoid clobbering an existing variable.
+
+This behaviour is actually only a warning, so comes from C<use warnings;> rather
+than C<use strict;>. However, it is still a result of I<declaring your intent>.
+
+  use strict;
+  use warnings;
+  my $cats = 'cat';
+  my $cats = 'horse';
+
+Z<>
+
+  "my" variable $cats masks earlier declaration in same scope at script.pl line 4.
+
+=h3 Clobbering
+
+It is easy to forget that the use of C<my> and C<our> produce I<lexical
+variables>. These are variables that are only visible within the block in which
+they are defined (treating a file as a block for this definition).
+
+With C<my> you simply cannot clobber this variable from anywhere else. It is
+either a compiler error, or a different variable.
+
+  # This sub is useless and does nothing
+  sub one {
+    my @cats;
+    push @cats, @_;
+    return @cats;
+  }
+  
+  # This sub can't see @cats from the other sub!
+  sub two {
+    push @cats, @_; # line 10
+    return @cats;
+  }
+
+Z<>
+
+  Global symbol "@cats" requires explicit package name at script.pl line 10.
+  Execution of script.pl aborted due to compilation errors.
+
+Or:
+
+  # This compiles, but is a new, separate array of cats.
+  # It is fractionally more useful than sub one.
+  sub two {
+    my @cats = ('default_cat');
+    push @cats, @_; # line 11
+    return @cats;
+  }
+
+A bonus of C<my> is that when the block has executed, the variable is tidied up.
+That is, it falls out of scope. This also works in loop bodies, allowing you to
+trash and recreate data in every iteration by putting a C<my> line inside the
+loop.
+
+  package Cat {
+  
+    my @cats;
+  
+    # Both of these use the same @cats - the one above!
+    sub one {
+      push @cats, @_;
+      return @cats;
+    }
+  
+    sub two {
+      @cats = ('default_cat'); # whups, overwrote the whole set!
+      push @cats, @_;
+      return @cats;
+    }
+  }
+
+  @Cat::cats = ('cat_one', 'cat_two'); 
+
+Z<>
+
+Here, C<@cats> is available to be clobbered anywhere in the Cat packageF<1>.
+However, because it is I<lexical>, it is only available within that blockF<2>.
+Line 18 I<appears> to be altering the same variable (C<@cats> within the package
+C<Cat>), but in fact this is creating a new package variable in CatF<3>.
+
+The intent of using C<my> to declare C<@cats> therefore is to have a variable
+available throughout the package, but not to be available I<without> the
+package.
+
+There is a subtler declaration of intent. The position of this C<my> statement
+declares that this variable is intended to be used throughout the I<entire>
+package; therefore it should be applicable to the majority of the behaviour in
+the package. Were this not the intention, the C<my> statement could be put in a
+block that encapsulates the variable and any places it is supposed to be used.
+
+C<our> is a similar beast, but it adds the ability for outsiders to also alter
+the variable, so long as they do so explicitly. The following code differs only
+in the use of C<our>:
+
+  package Cat {
+  
+    our @cats;
+  
+    sub one {
+      push @cats, @_;
+      return @cats;
+    }
+  
+    sub two {
+      @cats = ('default_cat');
+      push @cats, @_;
+      return @cats;
+    }
+  }
+
+  @Cat::cats = ('cat_one', 'cat_two'); 
+
+Now, the variable C<@cats> inside the package's block can also be accessed as
+C<@Cat::cats> from outside of it. This is the I<intent> you declare when using
+C<our>.
+
+=footnote 1 Normally, the package would be defined in its own file, but this
+format is common for single-use packages, especially in tests.
+
+=footnote 2 When the package is defined in its own file, the file itself is
+the scope for such variables.
+
+=footnote 3 The reader should be aware that this is the reasoning behind the
+message C<Global symbol "$foo" requires explicit package name> when strictures
+tells you off for an undeclared variable. Any variable name can be used, so long
+as it explicitly declares a package name like in this example. The difference
+between a I<lexical> variable and a I<package> variable is not in scope of this
+blog post.
