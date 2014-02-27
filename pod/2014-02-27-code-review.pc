@@ -1,0 +1,185 @@
+L<http://www.etsy.com/uk/listing/169160722/php-wedding-code-geek-chic-wedding-art|Look!>
+A horrible piece of code in a horrible language in a horrible frame for a
+sickeningly twee ceremony that should have been made obsolete along with the
+Inquisition!
+
+Let's review it.
+
+Here's the code, with line numbers.
+
+    01    <?
+    02      function do_wed() {
+    03        if ($objections != true) {
+    04          function do_vow() {
+    05            $vow = 1;
+    06            do {
+    07              if ($richer === 1
+    08                  && $poorer === 1
+    09                  && $sickness === 1
+    10                  && $health === 1) {
+    11                function have_hold($a,$b) {
+    12                  ini_set('session.gc_maxlifetime','forever');
+    13              }
+    14              have_hold('husband','wife');
+    15              define('friend', true);
+    16              define('partner', true);
+    17              define('faithful', true);
+    18              if ($i = 'do') {
+    19                   $f = 'finger';
+    20                   $r = 'ring;
+    21                   $f = $f + $r;
+    22                   }
+    23               }
+    24               $vow = $vow + 1;
+    25              } while ($vow != 2);
+    26            }
+    27            do_vow();
+    28            $register = array_fill($details);
+    29            print_r($register)
+    30            return $kiss;
+    31            }
+    32          }
+    33        do_wed();
+    34    ?>
+
+Let's go!
+
+=h4 line 1
+
+We use long tags here. C[<?php]
+
+=h4 line 3
+
+Undefined variable C<$objections>.
+
+C<$objections != true> better written C<!$objections>. But this is not what you
+meant; you meant C<count($objections) == 0>, since it will be an array of them
+
+=h4 line 4
+
+Don't define functions inside other functions.
+
+=h4 lines 6, 25
+
+You know how many vows you want. Use a for loop. Better, use an array of vows
+and populate it with two Vow objects, which represent the conditions each
+person agrees to. This means you can marry more than 2 people. The C<do_wed()>
+function should take the people to wed as arguments. Use C<func_get_args()> to
+loop over all of them, or C<(...$parties)> in the next version of PHP.
+
+Useless loop anyway. C<do_vow()> should be called twice with the person
+currently vowing.
+
+"Twice" is a western concept. This code is not internationalised.
+
+=h4 lines 7-10
+
+Undefined variables. None of these equals 1. It is unlikely that all four of
+these things would equal 1 at the same time. You want to test the party's
+agreement to these concepts, not the value of these variables. You need Person
+objects.
+
+=h4 line 11
+
+A function in a function in a function? This function takes two parameters and
+uses neither. Get rid of them.
+
+=h4 line 12
+
+This ini parameter takes an integer. C<'forever'> is not an integer.
+
+=h4 line 13
+
+This closing brace does not line up with the function definition on line 13. It
+does line up with the if on line 7, which implies you've forgotten to close the
+function, but scrutiny shows that you've misaligned the brace.
+
+=h4 line 14
+
+C<have_hold> does not take any parameters any more.
+
+This is exclusivist. Not all marriages are between a husband and a wife. These
+should be parameters to C<do_wed()>.
+
+This function is run twice, both times with the same parameters. It should swap
+over for the second iteration.
+
+=h4 line 16
+
+C<'partner'> is presumably the person we are not currently dealing with.
+
+=h4 line 17
+
+C<'faithful'> is not a boolean value and should be configured per app. It needs
+to be a data structure containing parameters of faithfulness, i.e. boundaries.
+
+=h4 line 18
+
+This is always true. Remove this condition. C<$i> is never used, so remove the
+assignment too.
+
+=h4 lines 19, 20
+
+Useless variables. Either accept them as parameters or use the literal strings
+directly.
+
+=h4 line 21
+
+If you'd not used these useless variables you'd realise you're trying to numerically add strings. C<.> is the concatenation operator. What is a 'fingerring'?
+
+C<$f> is discarded. Just omit this entire block.
+
+=h4 line 22
+
+What is this supposed to line up with?
+
+=h4 line 23
+
+This closes the C<if> that looks like it is closed on line 13. But it does not
+line up with it.
+
+=h4 line 24
+
+Better written C<$vow++>, but we've replaced this with an array of Vow objects
+containing agreement parameters, so don't do this any more.
+
+=h4 line 25
+
+The only reason this would be a while loop is if you're just going to keep
+asking until both (all) parties agree. This is not how one should enter into a
+marriage.
+
+=h4 line 26
+
+This closes C<do_vow()> but does not line up with it.
+
+=h4 line 27
+
+This is what should be run I<n> times, once per party in the agreement.
+
+=h4 line 28
+
+C<array_fill> takes three parameters. Register should be an object.
+
+=h4 line 29
+
+Syntax error - missing semicolon.
+
+C<print_r> is not the best thing to use here. Serialise this properly, perhaps
+with JSON so it can be consumed by an API or HTML so it can be styled and
+displayed properly.
+
+=h4 line 30
+
+Undefined variable C<$kiss>. Kiss is a verb and should be a function.
+
+=h4 lines 31, 32
+
+These braces should line up with what they close.
+
+=h4 line 33
+
+Don't run a function when it is defined - that's not how you create a library.
+
+This function could at least be parameterised with the names of the people
+being married. Isn't Etsy about crafts and hence personalisation?

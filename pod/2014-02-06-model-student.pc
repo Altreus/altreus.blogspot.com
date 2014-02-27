@@ -1,0 +1,344 @@
+Models! Model trains, model students, model aeroplanes, model citizens. Fashion
+model, data model, business model. Ford Model T. Model number.
+
+All these different uses of the word model have a commonality, the understanding
+of which is important to the understanding of what it is we mean when we talk
+about models in computing. This commonality may be considered the I<abstract>
+meaning of "model": the meaning that exists behind all the real-world uses of
+it.
+
+This concept is that of representation. Physical models are scaled-down
+representations of the things they model. A fashion model is really the
+representation of real people who would wear clothes (showing quite how divorced
+from reality fashion really is). A business model is a wordy representation of
+how the business will operate. Even the term "Ford Model T" is actually
+referring to the I<blueprint> of all cars of that type: "Model" is referring to
+the type, not the car itself.
+
+In computing, then, a model is a representation, a blueprint, a prototype that
+encapsulates the important details about the thing it is modelling. A good model
+will be a minimal but sufficient representation of the system it is modelling.
+
+An easy example is the rolling of dice.
+
+=h2 1d6
+
+Dice are a familiar system to everyone, I hope. They neatly encapsulate our idea
+of randomness, at least that one we're taught in primary school, whereby the
+outcome of the system is not predictable from the input.
+
+When we roll a d6 we expect to see one of its six faces pointing upwards but we
+don't know which one until it does so. Indeed on most dice we see the number
+represented as a pattern of dots; the number of dots being the number it shows.
+
+This, if you're not used to thinking in these terms, is I<very> specific. There
+are many extra features of a d6 that have nothing to do with the randomness of
+the d6. Every feature of the die except its shape (and mass distribution) can be
+altered and it would still exhibit the same properties of randomness.
+
+Modelling systems, therefore, requires a keen eye about what are the underlying
+mechanics that allow the system to work, and what are the superficial parts of
+it that happen to be the case in this particular instance.
+
+At its barest, a d6 is a system that, when run, produces a random integer from 1
+to 6. The random distribution is even across all numbers: which is to say, the
+more times it is rolled, the more we expect to see the counts for each result
+become equal.
+
+To model a d6, therefore, we simply need a system that can produce the same
+result.
+
+    Math.ceil(Math.random() * 6)
+
+This piece of Javascript models a 6-sided die. Run it in your browser's console
+if you don't believe me. Run it lots. Here's what happened when I ran it 50
+timesF<1>:
+
+    [2, 2, 6, 3, 5, 4, 3, 3, 2, 4, 
+     1, 5, 3, 4, 6, 1, 6, 6, 4, 5,
+     3, 1, 6, 5, 2, 4, 6, 6, 6, 5,
+     3, 6, 1, 2, 3, 2, 3, 3, 1, 5,
+     2, 5, 3, 2, 4, 3, 5, 6, 6, 5]
+
+And sorted:
+
+    [1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
+     2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
+     3, 3, 3, 3, 4, 4, 4, 4, 4, 4,
+     5, 5, 5, 5, 5, 5, 5, 5, 5, 6,
+     6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+
+At this level, Javascript's RNGF<2> should be roughly uniform in distribution,
+and with true randomness we should not expect uniform results at such small
+quantities. This distribution certainly seems random and within parameters for
+uniform distribution, so we've simplified the concept of a d6 into a I<minimal
+and sufficient> algorithm.
+
+=h2 dI<n>
+
+Not all modelling is about functionality. Much of data modelling is about just
+that: data!
+
+A model like a d6 is fundamentally fairly useless. Indeed the idea of a d6 is
+just a very tight constraint on a very useful concept - randomness. It serves
+little purpose to model a d6 I<specifically>, because the number of uses for a
+d6 is, in the grand scheme of things, small.
+
+In the real world, we use models in computing for two basic purposes: retrieval
+and prediction. The first one is used to store representations of things that
+exist, such as people or products. Those are I<data models>. We store these data
+models to let people log into a system, or to display a list of the products to
+customers. The second is used to try to work out what would happen in certain
+situations, based on the understanding that we have about the system in the
+first place - such as weather. These are I<functional models>, of which the d6
+above is one example.
+
+In both situations the model is useless without the things being modelled having
+I<data>. Properties of the objects store information about the objects and
+supply parameters to the algorithms we've devised.
+
+We have hit upon the idea of I<parameterising> algorithms. As noted, the d6
+algorithm is somewhat useless because I<all it does> is model a d6, which is of
+limited utility.
+
+We can increase the utility by modelling the algorithm of I<any> die. This is
+the second thing to be aware of when learning to abstract away the fundamentals
+from the real-world example. Earlier, we learned that we can turn a gazillion
+atoms' worth of die into a few electrons' worth of RNG by simply taking a number
+between 1 and 6 - this is the fundamental behaviour of a d6.
+
+Now, we can look at other real-world dice and see how their behaviour relates to
+the d6:
+
++list
+
+=item A d4 picks a number between 1 and 4
+
+=item A d6 picks a number between 1 and 6
+
+=item A d12 picks a number between 1 and 12
+
+=item A d20 picks a number between 1 and 20
+
+=item A d100 picks a number between 1 and 100
+
+-list
+
+It doesn't take a complex neural network to see the pattern here. A dI<n> picks
+a random number between 1 and I<n>.
+
+If we wanted to model a d4 we could amend our d6 model:
+
+    Math.ceil(Math.random() * 4)
+
+And we're done. Well done! You've invented job security. Now we've got two
+models for two different scenarios, and we know how to repeat the process for
+any die we like.
+
+You should at least by now have the feeling I'm leading you to a point; and if
+you haven't guessed it yet I'll make the point.
+
+We haven't modelled the I<pattern>.
+
+You can model dice until you're blue in the face but a good model captures the
+I<fundamental principles>. The d6 model captured the fundamental principles of a
+d6, but we want a model that captures the fundamental principles of I<all dice>.
+We need to model the I<abstract>; the I<pattern> that we spotted when we listed
+our dice.
+
+=h2 Abstraction
+
+"Abstract" is another one of those words that no one understands until they're
+faced with it, and then it confuses them until they understand it, and then they
+realise why it's been used all along. Most people know abstract as a form of
+art, and therefore associate it with meaningless shapes and random colours or
+something.
+
+The abstract of something is those features about the thing that remain behind
+when you take the actual thing away. The abstracts are those I<conceptual>
+things that mean you can describe it without actually having one; but which, if
+you had never seen one, would mean you may recreate a different thing.
+
+This is what we did with the d6. We took the I<abstract> concept of a d6, which
+is to randomly generate a number between 1 and 6, and then we recreated it in an
+algorithm that looks I<nothing like> a die. It's a string of characters on a
+screen, now. It doesn't even roll. Or bounce.
+
+Abstracting across many things is an art form in itself. For a start, the things
+have to be related, or else there's no real abstraction to make. Secondly,
+the degree to which things are actually related to one another can vary wildly,
+so knowing what level of abstraction to make is also a challenge. Thirdly,
+abstractions themselves may be similar; in which case you can start relating
+things that look the same in the abstract but are entirely unrelated in real
+life.
+
+Now that I've thoroughly lost you, let me bring you back to earth. When we laid
+out all the dice we know and examined how they work we saw a pattern, which is
+that a die with I<n> sides is an RNG between 1 and I<n>. A pattern is something
+we can model; we model it with parameterisation.
+
+Parameterisation is when you take a series of concrete examples and you remove
+one of the things from it and replace it with a variable; in this case, we
+replaced all the numbers with I<n>F<3>. The multiple types of die have been
+reduced to a single type, whose number of faces is now variable.
+
+The number of faces the die has is now a property of the die. We have a model
+with data!
+
+How do we represent it? Well in Javascript terms, parameters are given to
+functions, and objects have properties. We can divide the model into the two
+parts, functionality and data, by using a function to represent rolling a die
+and an object to represent an actual die.
+
+    function rollDie(die) {
+        return Math.ceil(Math.random() * die.sides);
+    }
+
+    var d6 = { sides: 6 };
+    var d12 = { sides: 12 };
+
+Here we have one function that will roll a die and return the result. Then we
+have two dice, each of which is a simple object with the property C<sides>.
+Inside the C<rollDie> function we use the C<sides> property of something called
+C<die>, which we can see is mentioned in the parentheses in the function
+definition. This together means that whatever is given to C<rollDie> is assumed
+to be a model of a die, and to have a property C<sides> that represents the
+number of sides it has.
+
+    rollDie(d6);
+    rollDie(d12);
+
+If we provide a die model as a parameter to the rolling function, the rolling
+function can inspect the property of the model, extract the data, and use the
+data in the original algorithm. The algorithm has not, fundamentally, changed.
+It is simply the case that now it is parameterised; which is to say that instead
+of duplicating the function for every possible invocation, we can create data
+models that represent the thing we are dealing with, and provide the data to the
+function. We have abstracted the pattern (1dI<n> returns a number between 1 and
+I<n>) by making the variable, I<n>, well—variable!
+
+=h2 Verbs and nouns
+
+The world is made of verbs and nouns. Systems verb nouns. People roll dice.
+People buy products. Computers authenticate passwords. Ecommerce systems suggest
+related products. Search engines search documents. URLs refer to resources.
+
+Our data models therefore comprise verbs and nouns. Our d6 model was a verbF<4>,
+but the noun was I<hard-coded>. Hard-coding is the failure to parameterise.
+Instead of accepting a parameter, the noun - d6 - was assumed by the verb,
+because the verb was the whole of "roll a d6".
+
+Our later model had a verb, C<rollDie>, which could roll any noun that looked
+like a die. It had two dice, C<d6> and C<d12>, which represented 6- and 12-sided
+dice, respectively. But the C<rollDie> verb did not I<rely> on those dice. The
+verb was I<abstracted> from the nouns because with the new verb, anyone can
+create a die of any size and roll it:
+
+    var d27 = { sides: 27 };
+    rollDie(d27);
+
+... so long as they have access to the I<verb> part - the functionality - of our
+model.
+
+By parameterisation we can turn a verb into a verb and a noun - "roll a d6"
+turns into "roll" and "a d6". By doing the opposite, we can turn a separate verb
+and noun into a single verb. Good modelling comes from learning when it is right
+to include the noun in the verb, and when the noun is a parameter. In some
+cases, the noun is fetched from somewhere else - a different verb (to fetch) and
+a different part of the model, with its own nouns.
+
+In the real world, computer modelling is much more involved than this. Data are
+often linked to other data, such that if one changes another must reflect it. A
+shopping basket, for example: if you add an item to the basket, the total must
+increase. If you change the quantity of an item, the subtotal for that item must
+increase, and so must the basket total.
+
+In that example, we already introduced nouns and verbs that we can model.
+Basket; item; total; subtotal; quantity. Some of these are things, and some of
+them are properties. Some are both! Items are real things, but the list of items
+is a property of the basket. The total is a property of the basket, and the
+subtotal is a property of the item when in context of a basket and having a
+quantity!
+
+Sometimes we replace nouns with verbs: instead of storing the total, we may
+choose to calculate the total on demand based on the items.
+
+Sometimes we replace verbs with nouns: when you roll a die, its value remains
+the same until you roll it again, but you should be able to ask it what value it
+shows. Our model could not do this. Alas! Our simple and sufficient model is no
+longer sufficient.
+
+Sometimes we separate a verb into a verb and a noun: we turn rolling a d6 into
+rolling, and create a d6 to roll. This allows us to either roll a different die,
+or do something different to the die.
+
+Sometimes we combine a verb and noun into a single verb: when we get the total
+of a basket, we don't separate it into "get" and "total"; if you change the noun
+here, the verb makes no sense!
+
+Even a simple example like a die can escalate, and it is easy to get overwhelmed
+by the interactions—imagine the complexity of a "simple but sufficient" model
+of an entire shop!—but ultimately we are modelling I<nouns> and I<verbs>; all
+we have to do is parameterise correctly and find the correct abstractions.
+
+=h2 Modelling systems
+
+Hopefully you will have, by means of a concrete example and a lot of nebulous
+ideas, some concept of what it is to model things in computer systems.
+Ultimately, you will need some way of defining functions - a programming
+language - and some way of storing data - maybe a database.
+
+Modelling a system therefore involves a good eye for what is a verb and what is
+a noun. That is to say, if you want to "roll a d6", does this suffice as a verb?
+Or is "d6" a noun? What if you want to "calculate the total"?
+
+There is no cheat sheet here. Experience is your best recourse. But perhaps we
+can jot down some things to consider when modelling a system.
+
++list
+
+=item How big is the system? The d6 system was small, but the shop system was
+large. Can it be smaller systems?
+
+=item How big are the nouns? A d6 has 6 faces, but the number 6 is enough to
+model that. Meanwhile, a basket has many items, but more information is needed;
+items are separate things, but faces are not.
+
+=item Can you de-noun your verb? Does the verb make sense on other things? Does
+it I<actually>? You can roll anything with sides; but can you get something
+other than a total from a basket? Can you get a total from something other than
+a basket?
+
+=item Can you combine a verb and noun? Have you gone too far parameterising?
+If your shop has only one basket, the basket is not a parameter: the verbs can
+assume it.
+
+=item Can your verb fetch a parameter, instead of accepting or assuming it? When
+you roll a die, perhaps you can establish elsewhere which die you are rolling.
+Perhaps the items on a basket know they are items; and there is only one basket,
+so you can get the items when you need them.
+
+-list
+
+That's all for now on models. In future posts we will take a look at how data
+get around inside these systems, how we store them, and the transient nature of
+data while the system is actually running.
+
+=footnote 1 C<<var a = [], i = 0; for (i = 0; i < 50; i++) {
+a.push(Math.ceil(Math.random() * 6)); } a; >>
+
+=footnote 2 Random number generator
+
+=footnote 3 Replacing all the I<d>s with I<m> may be a tempting thing to do
+here, but we shouldn't. That's because I<d> has been constant across all of our
+examples; it simply serves to refer to the thing we are modelling in the first
+place. I<n> is the new I<variable>, because the thing it has replaced I<varies>.
+I<d>, being constant, is the thing our model is taking away entirely! It serves
+no purpose to know that we are rolling dice, any more; the I<d> is therefore
+simply our reminder about what we are aiming for.
+
+=footnote 4 Commonly one would not copy-paste an algorithm into a console and
+run it. Instead, the algorithm would be packaged in a function and the user
+would be told to run the function. We did this later, when we parameterised, but
+to simplify and save on explanations, we avoided using a function in the first
+examples.
