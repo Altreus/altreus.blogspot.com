@@ -1,0 +1,63 @@
+OpenElec has a limited C</tmp> partition. Very limited, i.e. 10MiB. Many things
+fall over because they need more than this on the occasion - especially if it's
+not the only thing using the tmpfs.
+
+In order to change this you either have to hack around with
+automatically-created symlinks in startup scripts, or change it yourself.
+
+The size of the C</tmp> partition is stored in
+C</etc/init.d/01_mount-filesystem>
+
+    mount -n -t tmpfs -o size=10m tmpfs /var
+
+The problem is, that file is readonly. The reason it's readonly is that the
+entire root filesystem is stored in a
+L<http://squashfs.sourceforge.net/|squashfs> partition.
+
+To amend it, it is simply a case of unsquashing it, fixing it, and resquashing
+it.
+
+=h2 Fix it
+
+Pull the SD card out of your RPi (I'm assuming that's where you have it) and
+put it into your card reader. Let your system mount it.
+
+You should have a SYSTEM drive somewhere on your computer. Lubuntu mounts it at
+C</media/altreus/SYSTEM>, so let's go with that.
+
+  $ mkdir squash
+  $ cd squash
+  $ cp /media/altreus/SYSTEM/SYSTEM SYSTEM.bak
+  $ unsquashfs SYSTEM.bak
+
+Now we have a copy of the OpenElec root filesystem in a C<.bak> file so we can
+undo it when we screw it up later. We also have the files themselves unpacked
+into C<squashfs-root>. This is the default place C<unsquashfs> puts them.
+
+  $ vi squashfs-root/etc/init.d/01_mount-filesystem
+
+Change the file to have a better size C</tmp>. I used 500mb because my SD card
+is 8GB. Ignore the first instance of C<tmpfs> in the file; we want to change
+the 10mb one.
+
+  $ sudo mksquashfs ./squashfs-root SYSTEM
+
+It's important that you do this with sudo. The file C</etc/shadow> has
+permissions C<000>, making it only accessible by root. This is how we got it
+when we unsquashed it, so this is how we want to keep it. My C</etc/shadow> is
+600, but they presumably wanted theirs to be C<000>. If we want to do the above
+step without root, we'd have to change the permissions so our user can see it -
+we can't change the permissions after it's squashed, so the only way to get a
+C<000> file into the filesystem is to squash it with root.
+
+Anyway, done.
+
+  $ cp SYSTEM /media/altreus/SYSTEM
+
+Your new squashfs file will be mounted by OpenElec and your C<tmpfs> will now
+be mounted with the size you gave it.
+
+I'm not 100% certain this is stable. My Pi has started rebooting occasionally;
+but I might be giving it more than it can handle. It is an old model, but if
+I've introduced a bug because 500mb is too much, or something, I'm sure I'll
+get to the bottom of it and update the post,
