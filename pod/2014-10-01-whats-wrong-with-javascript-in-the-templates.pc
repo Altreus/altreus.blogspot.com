@@ -1,0 +1,387 @@
+Those of you keeping score will know that I recently started a new job. This
+one is Perl, not PHP, and so a certain level of standards is expected from the
+code. What with Perl having all these neato features and excellent web
+frameworks, I at least consider it on a par with Python and Ruby in its
+utility.
+
+Perusing the new-to-me codebase I of course discover some of the hysterical
+raisins that live there, much of which is easily forgiven because the original
+coder had the foresight to apologise in a comment for doing it in the first
+place. But one thing stood out to me as a prime candidate for refactoring:
+JavaScript in the templates.
+
+I said as much and was surprised to be posed the question, "What's wrong with
+JavaScript in the templates?"
+
+Surprised not to be asked the question, but because I didn't know what the
+answer was. I've worked enough on the front end of previous jobs to have enough
+experience in the matter that seeing JS in template code makes me flinch, but
+never have I been asked to actually introspect this reaction and explain it.
+
+Questions like that are primo blog post material, and it's been a while since I
+properly got my teeth into one, so on my journey home I put my mind to
+formalising quite what it was about it that made me want to rip it out and
+refactor the life out of it.
+
+=h2 What it's not
+
+Some obvious answers come to mind, with varying validity. 
+
++list
+
+=item Is it because it's hard to find? No. Everything's hard to find. C<ack>
+for it - you'll find it soon enough.
+
+=item Is it because it violates separation of concerns? No. In fact, you could
+argue that it improves it, by encapsulating JavaScript only useful to a
+template inside that very template.
+
+=item Is it because the only reason most people put JS in a template is so they
+can use the templating language to build JS? Well yes, but that's just the same
+question. What's I<wrong> with it?
+
+=item Is it because it's not reusable? Well, yes and no. Most template JS is
+not intended to be reusable; it's quite specific to that particular template,
+and there's little use for it elsewhere. More on this point later.
+
+=item Is it the same reason we don't put CSS in the template either? Or inline
+in the HTML? Yes! By Jupiter, yes! We find the answer in the template itself.
+It's the other, main part of the template that we've not mentioned yet - the
+HTML.
+
+-list
+
+=h2 What lies beneath
+
+To answer the question, we must deconstruct the web page itself and look at the
+parts. What are we really looking at when we look at a web page? What are we
+really providing when we build a template? What is the purpose of the HTML, the
+TT2 or Jade or Mustache code that wraps or creates it?
+
+Most web pages follow a similar structure: There's the C[<html>] with its
+C[<head>] and C[<body>]; the body has a C[<div class="header">] or, better yet,
+a C[<header>], and some sort of C[<div id="content">]. Then at last there's a
+bunch of stuff that finally gets to the point, i.e. displays whatever it is the
+page is displaying.
+
+Most template structures separate all the pre/postamble from the content
+itself. Even in the CGI days we, naively but with good intent, would have a
+C[header.html] and a C[footer.html] and we would render the header, then the
+body, then the footer, to C[STDOUT]. More recently, we have a single file with
+the pre- and postamble in it, and we import the rendered content into that. We
+tend to also have a considerable number of satellite template files
+representing handy widgets and reusable code and all the other things that I've
+alredy said aren't really the reason why we don't do the title of this article.
+
+We knew then, as we know now, something we always forget to talk about;
+something implicit in everything we do here. While we make all these templates
+rendering data in consistent ways we somehow lose sight of the simplest of
+notions: we are I<representing resources>.
+
+=h3 Resource and Framing
+
+"Resource" is a fully-functional word, writ deep into the very clay with which
+we make our internets; vis-a-vis HTTP. HTTP works with a I<verb> and a I<noun>,
+i.e. it says "Do this to this". "Framing" is a word I've picked to describe
+what it is we website-makers do to resources to make them look nice for people
+using browsers that conform to the standards set out to allow us to do so.
+
+HTTP's nouns are URIs. URI means
+L<http://en.wikipedia.org/wiki/Uniform_resource_identifier|Uniform Resource
+Identifier>. The R in
+URI (or URL or IRI) means resource. It means thing; it's identifying the nouns
+of the internet. We respond to a URI with a resource, represented in HTML
+format for the purposes of this discussion. We I<know> this, but we never
+I<say> this - and so whenever we get discussions, no one ever uses it as a
+basis for finding answers. But the concept of resource contains the answer to
+our question.
+
+When we divide our templates up into separate files there is the tacit goal
+that the template we use to represent the actual, specific resource contain as
+little HTML as possible. Why? Well, mostly for consistency. We want to frame
+all our resources - at least those related to each other - in the same way.
+That means that if we put as little HTML as we can get away with into our
+resource templates, we can put as much as we can get away with into our framing
+templates, and thus have as little variation between the rendered resources as
+we can. A side effect, and therefore a second benefit, is that if we want to
+reuse or amend our framing, we can do this in one place - it's DRY.
+
+We already recognise the difference between frame and resource: it's encoded
+right there in C[<div id="content">]. How many of your templates resemble this
+structure?
+
+  <body>
+    <stuff></stuff>
+    <div id="content">
+      <% content %>
+    </div>
+    <more stuff></more stuff>
+  </body>
+
+That right there is the boundary between Alliance and Reaver space. Uh, I mean,
+the place where the framing goes away and the resource begins. The resource is
+all the data that change when you ask for a different ID, or a different
+resource type. The resource is that which, if you took all the HTML away, would
+I<still be what you asked for>.
+
+=h2 I've nearly made my point
+
+Not all resources are data. Some resources are forms. I'm choosing forms as an
+example for another resource type because we're all familiar with them doing
+stuff.
+
+Forms contain no data, but instead prompt you for data, and allow you to create
+more resources.  Nominally, they represent the I<structure of the resource
+type>, but don't represent any particular I<record> of that type. The form
+holds the key to the answer: I<behaviour>.
+
+Consider:
+
+    <form action="/upload_image" method="post" enctype="multipart/form-data">
+      <label for="image">Upload image:
+        <input name="image" type="file">
+      </label>
+
+      <input type="submit">
+    </form>
+
+This is a form with a file control, as you well know. It renders as a box with
+a "Browse" button. This one renders with a label, "Upload image:".
+
+If you click on the label, the text of the input, or the browse button, you get
+the same behaviour: a file browser pops up. When you select a file and confirm
+it, the name of the file appears in the text part of the input, unless some
+jackass has installed Uploadify or similar, and broken it.
+
+It also renders a single submit button. The button looks like all the other
+buttons on your website because you don't put CSS in your templates. The reason
+for that is being explained as we speak. I mean, as you read. I mean now.
+
+When you click the submit button, the browser composes an HTTP POST request to
+the URL C</upload_image> on the host that served this resource. This request
+contains the entirety of the selected file, encoded in such a way that the
+receiving server can understand it. Presumably, the resource at that URL knows
+what to do with it.
+
+Now, kindly point out to me the part of the HTML snippet above that implements
+any of that behaviour. 
+
+It's not there.
+
+Nouns and adjectives - that's what the HTML is made of. There is not a single
+verb in the entirety of that form, and yet those few lines perform, implicitly,
+functionality that you would probably have to look up on Wikipedia to implement
+yourself.
+
+Not all resources are forms, either.  Here's a video resource, shamelessly
+stolen from Wikipedia, and represented in HTML format:
+
+    <video src="/movie.webm" poster="/movie.jpg" controls> </video>
+
+Here's a more familiar one:
+
+    <img src="/images/avatar.png" alt="avatar" title="Get your pointer off my face">
+
+Noun-adjective-adjective-adjective. Noun adjective-adjective-adjective. The
+C[<video>] noun:
+
++list
+
+=item Fetches the resource at '/movie.jpg' of the host that served this HTML
+resource, and renders it at the place in the page concordant with the styling
+associated with it and the rest of the HTML.
+
+=item Puts some sort of controls on this image, probably a play button, which,
+when clicked, causes the resource at '/movie.webm' to be fetched.
+
+=item Renders the fetched video file I<in situ>, replacing the still image, and
+plays any sound that comes with it.
+
+=item Renders further controls, such as a scrubber, pause, volume slider.
+
+=item Affects the right-click menu of the browser to provide appropriate
+options to a video: save video, get URL, get URL at this time, etc.
+
+-list
+
+Plus anything else I've forgotten. The C[<img>] noun has similar, albeit many
+fewer, effects: the image is fetched and rendered without user interaction.
+Indeed, if the image is an animated gif, it will animate! On its own!
+
+This borderline-facetious set of examples serves to point out that the browser
+has already I<got> verbs. The nouns (HTML elements) say which verbs you want to
+use (and where to put the visuals for the user's interaction), and the
+adjectives (the attributes of the elements) control the parameters that the
+verbs need. (Fetch which video? Play automatically?)
+
+This is called I<semantics>.
+
+=h2 Semantics!
+
+I'm going to define semantics as the use of nouns to imply verbsF<1>. Form
+fields come with behaviour, and you say which behaviour you want through nouns,
+i.e.  the choice of which input you use. Semantics also covers those adjectives
+that fine-tune the noun's behaviour by describing it further.
+
+Semantics tell things how to behave based on what the resource contains. An
+HTML resource often contains framing. Semantics go into the HTML to tell anyone
+who cares which bit they can ignore. Semantics is the way you phrase things;
+it's how you describe the resource.
+
+Consider:
+
+    <div id="content">
+
+A web scraper can use this sort of thing to know what to ignore. Ignore is a
+verb. The HTML doesn't say "ignore this"; that's for the client to decide.
+
+The browser isn't going to ignore it - but the browser doesn't care about this
+particular piece of semanticsF<2>. If the CSS says to do something to it then
+the browser will do that to it, but the browser doesn't do that by default.
+
+The web scraper will skip anything outside this div - provided it knows what
+the 'content' ID means - and the browser will do nothing based on this ID
+because it hasn't been told to.
+
+That right there is the answer. There is a difference between all the things it
+is possible for a browser to do and all the things the browser can already do.
+You can stick together awesome websites entirely using HTML5 and CSS3, but
+often you want behaviour that is not already built-in to the browser. Maybe you
+want C<div#content> to have special styling or behaviour, but browsers don't
+come with that built-in. 
+
+And indeed, styling is just a form of behaviour - CSS tells the browser how to
+behave when it renders certain elements in certain configurations. JavaScript
+tells the browser how to behave when the I<user> does things.
+
+This is the point where people start putting JavaScript into templates. A
+specific form needs special behaviour, so you add a C[<script>] tag and then
+output the form.
+
+Smash! go the semantics. Fie! cry the tortured frontenders.
+
+None of the behaviour you ever write is useful only once. I told you I'd get
+back to the reusability point. The JavaScript doesn't go in the template
+because it's not reusable, sure, but why is that a problem?
+
+The problem is the JavaScript defines I<verbs>. Semantic HTML is that HTML
+which uses only nouns, and lets the browser select the correct verbs.
+
+JavaScript, therefore, is correctly a I<separate resource> that I<adds verbs>
+to the browser, and defines the nouns to which they apply. That's why
+everything eventually ends up as a JavaScript plugin; and sometimes as core
+browser behaviour.
+
+Essentially, we're saying that JavaScript is a CSS file that defines behaviour,
+not styling. Where CSS tells the browser how to interpret the semantics of your
+HTML in terms of colouring, positioning and so on, JavaScript tells the browser
+how to interpret the semantics in terms of direct functionality - behaviour.
+
+Indeed, not only should JavaScript never go into the template, it should never
+go into C[<script>] tags either. Just like CSS should never go into C[<style>]
+tags.
+
+=h2 The Related Resource
+
+Resources have related resources. If you strip out all the framing of your HTML
+resource (e.g. you render it as JSON instead) you are still going to keep many
+of the hyperlinks - the contents of any C[<a>] tag inside the content div,
+perhaps some of the image sources.  That's because the HTML framing is just
+rendering the content in a human-readable wayF<3>. The relations between
+resources are actually part of the resource itself, or at least metadata to it.
+
+This is important because it addresses one of the main reasons people put
+JavaScript in templates: so that they can use the template language on the
+JavaScript, and thus build resource-specific JS that renders, e.g., a list of
+related resources when you click some "See related" button.
+
+If the resources are related they should I<already be in the page>. I seriously
+cannot stress that enough. Either the related resources are, or are not,
+relevant to this representation of the resource.
+
+If the HTML went away and you were returning JSON, would you, or would you not,
+list those related resources as metadata, one way or another?
+
+They cannot be part of the framing: the framing is consistent across the whole
+site! They are unique to this resource; and the style of list that is invisible
+until a button is pressed is unique to this type of resource.
+
+But is "style of list" not an adjective about this list? Is list not a noun?
+Cannot you use the noun-adjective semantics to say, "This is a list of related
+resources, and it is of type pop-up-on-button"? HTML is amply equipped to
+represent this semantically: we even have the C<rel> attribute to let you
+specify which button should activate the list.
+
+Related resources belong in the page. Either as a hyperlink, or directly in the
+HTML. If you want to save bandwidth, you don't put the whole list in, but you
+put in a hyperlink placeholder instead. The important thing is that the HTML is
+accurately representing the resource. Just like the JSON would. Don't force
+non-browser consumers of your HTML resource to figure out how to run the
+JavaScript just to get related data.
+
+=h3 e.g.
+
+I<This|http://harvesthq.github.io/chosen/> is Chosen. You've probably seen it
+before. You start typing in a form field, and it lists all matching options,
+filtering as you type.
+
+Chosen can either use an existing set of options, such as from a select box, or
+a URL from which to fetch options that match the string. 
+
+Both of these can be in the HTML before the JS even runs. The list of options
+is a related resource; it is simply represented in different ways. The first
+way puts all of the related resources in with the main resource; the second way
+puts a hyperlink to a single other related resource, from which they can be
+fetched when it's appropriate to do so.
+
+At no time is it necessary to put this data into the JavaScript. JavaScript can
+read. Hell, the JavaScript should work on the JSON representation and all you'd
+have to change would be how it finds the data.
+
+=h2 The Answer
+
+The answer, then, is semantics. Of course it is. But it's what semantics
+I<means> that turned out to be the difficult thing to define here.
+
+Semantics is about saying what this resource is; it's metadata about the
+resource itself. Semantics allows the client to make the decisions about what
+parts of the resource are relevant and what parts are not.
+
+It's exactly the same principle by which responsive web design works.
+
+It's exactly the same reason you don't put inline CSS into your HTML.
+
+It's exactly the same reason you've never written a video player, or had to
+decode the JPEG file format manually in JavaScript and blit the resulting
+bitstring onto a canvas element.
+
+It's exactly the same reason you don't know how to launch a file browser
+dialogue box.F<4>
+
+It's exactly the same reason L<http://webcomponents.org|web components> exist.
+
+It's exactly the same reason JSON resources don't come with a stylesheet or
+JavaScript.
+
+It's exactly the same reason we now have C[<nav>] and C[<section>] elements.
+
+It's exactly the same reason we can produce screen-reader-friendly
+representations of HTML pages when the HTML page is correctly structured.
+
+It's because you are describing what the resource I<is>, and letting the client
+decide what it I<does>.
+
+*drops mic*
+
+=hr
+
+=footnote 1 A separate discussion
+
+=footnote 2 Not all HTML is for the browser. HTML is a perfectly sensible
+representation format for machine use as well.
+
+=footnote 3 Perhaps better: the HTML framing is a machine-readable way of
+getting the browser to render the content in a human-readable way.
+
+=footnote 4 In principle. HTML5 advances in file handling mean it is more
+common for the file dialogue to be called directly from JS.
