@@ -1,5 +1,5 @@
 package PodCats::Parser;
-use strict; 
+use strict;
 use warnings;
 use 5.010;
 
@@ -12,12 +12,12 @@ use Digest::SHA qw(sha1_hex);
 our @COMMANDS = qw(
     h1 h2 h3 h4 hr
     notice footnote
-    item
+    item img
     head cell
 );
 
 our @BLOCKS = qw(
-    
+
 );
 
 sub new {
@@ -50,9 +50,9 @@ sub handle_command {
     if ($command eq 'footnote') {
         my ($num) = $str =~ /(\d+)/;
 
-        $str->apply_tag($-[0], $+[0], a => { 
+        $str->apply_tag($-[0], $+[0], a => {
             href => "#fn-$self->{sha}-$num",
-            name => "footnote-$self->{sha}-$num" 
+            name => "footnote-$self->{sha}-$num"
         });
         $str->apply_tag($-[0], $+[0], sup => 1);
         $str->apply_tag(0, length $str, p => { class => 'footnote' });
@@ -89,7 +89,7 @@ sub handle_command {
         if (! $self->{cell}) {
             $self->{html} .= String::Tagged::HTML->new_raw('<tr>' . "\n");
         }
-        
+
         $str->apply_tag(0, $str->length - 1, td => 1);
         $self->{html} .= $str;
 
@@ -97,6 +97,20 @@ sub handle_command {
             $self->{html} .= String::Tagged::HTML->new_raw('</tr>' . "\n");
             $self->{cell} = 0;
         }
+    }
+    if ($command eq 'img') {
+        # FIXME: use a DOM builder
+        my @data = split ' ', $str;
+        my $img = qq(<img src="$data[0]");
+
+        if ($data[1]) {
+            $img .= qq( width="$data[1]");
+        }
+        if ($data[2]) {
+            $img .= qq( height="$data[2]");
+        }
+        $img .= '>';
+        $self->{html} .= String::Tagged::HTML->new_raw($img . "\n");
     }
 }
 
@@ -202,8 +216,8 @@ sub handle_entity {
     if ($entity eq 'F') {
         my $num = $content[0];
         my $str = make_str($num);
-        $str->apply_tag(0, length $num, a => { 
-            href => "#footnote-$self->{sha}-$num", 
+        $str->apply_tag(0, length $num, a => {
+            href => "#footnote-$self->{sha}-$num",
             name => "fn-$self->{sha}-$num"
         });
         $str->apply_tag(0, length $num, sup => 1);
@@ -222,7 +236,7 @@ sub make_str {
         return map { scalar make_str($_) } @_;
     }
     else {
-        return ref $_[0] ? $_[0] : String::Tagged::HTML->new($_[0]) 
+        return ref $_[0] ? $_[0] : String::Tagged::HTML->new($_[0])
     }
 }
 1;
