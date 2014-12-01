@@ -71,7 +71,7 @@ External images are supported with the C<=img> command with the URL, however.
 =h2 Sauce
 
 What follows is the entire .pc file for this post up to the end of this
-paragraph, so you can have a taste of what it looks likeF<4>F<6>
+paragraph, so you can have a taste of what it looks likeF<4> F<6>
 
     Today is the first day of the advent calendar blog thing, so I thought I'd give it a whirl. Let's see how far I get.
 
@@ -105,7 +105,7 @@ paragraph, so you can have a taste of what it looks likeF<4>F<6>
 
     =h2 Sauce
 
-    What follows is the entire .pc file for this post up to the end of this paragraph, so you can have a taste of what it looks likeF<4>
+    What follows is the entire .pc file for this post up to the end of this paragraph, so you can have a taste of what it looks likeF<4> F<6>
 
     =footnote 1 Like this
 
