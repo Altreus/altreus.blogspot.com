@@ -66,98 +66,58 @@ Google uploads the images to Blogger. But there's no easy way of automating
 this, and I really couldn't be bothered working it out the hard way, so,
 currently, images are inserted in post-processing.
 
+External images are supported with the C<=img> command with the URL, however.
+
 =h2 Sauce
 
 What follows is the entire .pc file for this post up to the end of this
-paragraph, so you can have a taste of what it looks likeF<4>
+paragraph, so you can have a taste of what it looks likeF<4>F<6>
 
-    Today is the first day of the advent calendar blog thing, so I thought I'd give
-    it a whirl. Let's see how far I get.
+    Today is the first day of the advent calendar blog thing, so I thought I'd give it a whirl. Let's see how far I get.
 
-    I thought I'd do an easy one and put it out there how I actually do my blog.
-    Well, I don't like writing HTML, and I don't like WYSIWYG editors, but I wanted
-    something easy like blogger to actually do all the hard work for me.
+    I thought I'd do an easy one and put it out there how I actually do my blog.  Well, I don't like writing HTML, and I don't like WYSIWYG editors, but I wanted something easy like blogger to actually do all the hard work for me.
 
-    I don't really like
-    L<http://daringfireball.net/projects/markdown/syntax|Markdown>, primarily
-    because it doesn't let me do certain things easilyF<1>. Footnotes are
-    something I do commonly when I'm writingF<2>; they allow a certain second
-    dimension to what would otherwise be a one-dimensional stream of words. In fact
-    it's sort of a hyperlink, from before we had hypermedia.
+    I don't really like L<http://daringfireball.net/projects/markdown/syntax|Markdown>, primarily because it doesn't let me do certain things easilyF<1>. Footnotes are something I do commonly when I'm writingF<2>; they allow a certain second dimension to what would otherwise be a one-dimensional stream of words. In fact it's sort of a hyperlink, from before we had hypermedia.
 
-    You'll note, indeed, that my footnotes are hyperlinks. They link to their
-    location on the page; and the footnotes at the bottom of the page link back to
-    their marks. This is the sort of functionality I wanted from a blog markup
-    language.
+    You'll note, indeed, that my footnotes are hyperlinks. They link to their location on the page; and the footnotes at the bottom of the page link back to their marks. This is the sort of functionality I wanted from a blog markup language.
 
-    I decided that L<http://perldoc.perl.org/perlpod.html|POD> has a good balance
-    of DWIMF<3> and expressiveness, so I took the concepts and
-    generalised them.
+    I decided that L<http://perldoc.perl.org/perlpod.html|POD> has a good balance of DWIMF<3> and expressiveness, so I took the concepts and generalised them.
 
-    This led to L<https://metacpan.org/pod/Pod::Cats|Pod::Cats> being written. It
-    really needs to be rewritten, now that it's something I actually use regularly.
-    It's not my best code.
+    This led to L<https://metacpan.org/pod/Pod::Cats|Pod::Cats> being written. It really needs to be rewritten, now that it's something I actually use regularly.  It's not my best code.
 
-    The name Pod::Cats came from a conversation I had quite some time ago in the
-    #perl-cats channel on Freenode, wherein we thought it would be neat to have a
-    community blog/podcast site called Podcats: the whole discussion started
-    because someone typoed podcast.
+    The name Pod::Cats came from a conversation I had quite some time ago in the #perl-cats channel on Freenode, wherein we thought it would be neat to have a community blog/podcast site called Podcats: the whole discussion started because someone typoed podcast.
 
-    Anyway, the module defines the grammar of Pod::Cats documents, but is intended
-    to be extended to provide functionality.
-    L<https://github.com/Altreus/altreus.blogspot.com/blob/master/lib/PodCats/Parser.pm|PodCats::Parser>
-    does just that. This module could also do with a refactor.
+    Anyway, the module defines the grammar of Pod::Cats documents, but is intended to be extended to provide functionality.  L<https://github.com/Altreus/altreus.blogspot.com/blob/master/lib/PodCats/Parser.pm|PodCats::Parser> does just that. This module could also do with a refactor.
 
-    The Pod::Cats parser uses a subclass of
-    L<https://metacpan.org/pod/String::Tagged::HTML|String::Tagged::HTML>
-    (L<https://github.com/Altreus/altreus.blogspot.com/blob/master/lib/PodCats/String/Tagged/HTML.pm|here>)
-    whose entire purpose is to just render when stringified. In fact the main
-    module may do this now - I should check!
+    The Pod::Cats parser uses a subclass of L<https://metacpan.org/pod/String::Tagged::HTML|String::Tagged::HTML> (L<https://github.com/Altreus/altreus.blogspot.com/blob/master/lib/PodCats/String/Tagged/HTML.pm|here>) whose entire purpose is to just render when stringified. In fact the main module may do this now - I should check!
 
-    Bugs exist in String::Tagged::HTML whereby, because there is no inherent
-    ordering to tags in the same place in the string, the order of render is at the
-    mercy of Perl's hashing algorithm. LeoNerd is pawing at a solution to this, so
-    with luck this will solve my footnote issues soon. I've been helping with moral
-    support and distractions.
+    Bugs exist in String::Tagged::HTML whereby, because there is no inherent ordering to tags in the same place in the string, the order of render is at the mercy of Perl's hashing algorithm. LeoNerd is pawing at a solution to this, so with luck this will solve my footnote issues soon. I've been helping with moral support and distractions.
 
-    Anyway, I save my files with the .pc extension and use a reasonably consistent
-    set of Pod::Cats commands to mark up my blog posts. The idea is to maintain
-    semantic structure while minimising the amount of actual meta-stuff in the file
-    itself: something I felt POD was good at, with a few amendments of my own.
+    Anyway, I save my files with the .pc extension and use a reasonably consistent set of Pod::Cats commands to mark up my blog posts. The idea is to maintain semantic structure while minimising the amount of actual meta-stuff in the file itself: something I felt POD was good at, with a few amendments of my own.  
 
-    Once done I simply run my
-    L<https://github.com/Altreus/altreus.blogspot.com/blob/master/parse.pl|script>,
-    which overwrites or creates the HTML for any .pc file with a later save date
-    than the equivalent HTML, or missing HTML. Then I upload the HTML. This means I
-    can fudge the HTML afterwards without worrying about it being overwritten the
-    next time I run the script.
+    Once done I simply run my L<https://github.com/Altreus/altreus.blogspot.com/blob/master/parse.pl|script>, which overwrites or creates the HTML for any .pc file with a later save date than the equivalent HTML, or missing HTML. Then I upload the HTML. This means I can fudge the HTML afterwards without worrying about it being overwritten the next time I run the script.
 
     =h2 Images
 
-    Currently I have no way of supporting images. I did try to; I looked into how
-    Google uploads the images to Blogger. But there's no easy way of automating
-    this, and I really couldn't be bothered working it out the hard way, so,
-    currently, images are inserted in post-processing.
+    Currently I have no way of supporting images. I did try to; I looked into how Google uploads the images to Blogger. But there's no easy way of automating this, and I really couldn't be bothered working it out the hard way, so, currently, images are inserted in post-processing.  
+
+    External images are supported with the C<=img> command with the URL, however.
 
     =h2 Sauce
 
-    What follows is the entire .pc file for this post up to the end of this
-    paragraph, so you can have a taste of what it looks likeF<4>
+    What follows is the entire .pc file for this post up to the end of this paragraph, so you can have a taste of what it looks likeF<4>
 
     =footnote 1 Like this
 
-    =footnote 2 Because I have a lot to say and I don't want to interrupt the flow
-    of the sentence
+    =footnote 2 Because I have a lot to say and I don't want to interrupt the flow of the sentence
 
     =footnote 3 Do What I Mean
 
-    =footnote 4 I've artificially promoted the footnotes to this point, since they
-    need to be the last thing in the file to render properly. This is something I
-    need to fix; footnotes should be stored and rendered at the end irrespective of
-    where they turn upF<5>.
+    =footnote 4 I've artificially promoted the footnotes to this point, since they need to be the last thing in the file to render properly. This is something I need to fix; footnotes should be stored and rendered at the end irrespective of where they turn upF<5>.
 
-    =footnote 5 In fact an auto-numbering system came and went and shall come back
-    again at some point.
+    =footnote 5 In fact an auto-numbering system came and went and shall come back again at some point.
+
+    =footnote 6 Also available L<https://github.com/Altreus/altreus.blogspot.com/blob/master/pod/2014-12-01-pod-cats.pc|here>
 
 =footnote 1 Like this
 
@@ -173,3 +133,6 @@ where they turn upF<5>.
 
 =footnote 5 In fact an auto-numbering system came and went and shall come back
 again at some point.
+
+=footnote 6 Also available
+L<https://github.com/Altreus/altreus.blogspot.com/blob/master/pod/2014-12-01-pod-cats.pc|here>
