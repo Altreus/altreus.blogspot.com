@@ -1,0 +1,82 @@
+Can't believe I've not made a post about this ancient module.
+C<L<https://metacpan.org/pod/Opt::Imistic|Opt::Imistic> > is a module I wrote to
+facilitate the writing of command-line scripts that take options. It was
+inspired by the node module of the same(ish) name,
+L<https://github.com/substack/node-optimist|Optimist> (now deprecated).
+
+All C<Opt::Imistic> does is to parse C<@ARGV> for things that look like options
+(using essentially the same rules as
+C< L<https://metacpan.org/pod/Getopt::Long|Getopt::Long> > does with
+C<gnu_compat> options, i.e. the sensible way of doing it that doesn't cause too
+much ambiguity.
+
+Long and short options are recognised by default, given GNU style. C<-xyz> is
+three options and C<--xyz> is one. Use whitespace or C<=> to specify values to
+options. C<=> can be used if the value looks like an optionF<1>.
+
+As the docs say, this is a 90% module - C<Getopt::Long> is for the other 90%.
+
+=h2 Hacky magic
+
+C<Opt::Imistic> relies on a piece of Perl magic the reader may not be aware of,
+which is that, for all of Perl's global variables, it appears to be the entire
+typeglob by that name that is global.
+
+Simply put, this means that, because C<@ARGV> exists, so does C<%ARGV>. This is
+exploited by C<Opt::Imistic>, by putting discovered arguments as the keys to the
+associated values, if any.
+
+=h2 Overload magic
+
+tm604 on IRC suggested that I can be even more magical if the discovered options
+were actually objects of a class that behaves correctly in different situations.
+
+Since you can't prevent a person from multiply specifying a single-use option,
+instead of bailing horribly in this situation it's traditional to simply take
+the last instance of it. This implies the option needs a value; otherwise, it
+doesn't matter how many times you specify it. Think C<--config>, for example.
+
+Indeed, if the option doesn't take a value, it's usually expected that the
+script is going to count the number of times it's specified. Think C<-v>,
+often "verbose", or C<-vvv>, "extremely verbose".
+
+Perl being Perl, the user doesn't have to care whether it was specified once or
+many times, if all the script cares about is whether it was specified at all.
+Zero is the false value here.
+
+With a simple classF<2>, entirely designed to carry overload magic, we can gather
+all this information at once.
+
+    package Opt::Imistic::Option {
+        use overload
+            '""' => sub { $_[0]->[-1] },
+            'bool' => sub { 1 }
+    }
+
+This covers the common uses of command-line options:
+
++list
+
+=item B<One or more values> - The objects are blessed array refs. Simply deref
+it for your values.
+
+=item B<One value> - Treat it as a string, and it'll stringify. This also works
+for numbers. The overload ensures the last value is taken; all options are
+arrayrefs with at least one thing in them, or absent entirely.
+
+=item B<A countable option> - Simply count your arrayref.
+
+=item B<A boolean option> - Just use it in boolean context. You'll get a 1 if
+it's there.
+
+-list
+
+Again, this is a 90% solution, but check the docs for the extra functionality I
+added. You can specify options are required, and specify that at least I<n>
+arguments must be left on C<@ARGV> at the end of parsing.
+
+=footnote 1 I'm not sure whether I just came up with this or not. This might not
+(yet) be true.
+
+=footnote 2 This package uses the C<package BLOCK> syntax, introduced in 5.14.
+The module doesn't specify 5.14; this is an oversight.
