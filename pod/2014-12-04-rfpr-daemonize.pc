@@ -1,0 +1,27 @@
+I've embarked on a new term, RPFR. An RFPR is a Request For Pull Requests: like
+an RFC, except for when you've already started writing code and you want people
+to add features or fix it, instead of bikeshedding about the spec for it.
+
+This first one is for my daemonize script at
+L<https://github.com/Altreus/daemonize.pl>. This script is a wrapper around
+L<https://metacpan.org/pod/Daemon::Control|Daemon::Control>
+(L<https://github.com/symkat/Daemon-Control>), which I wrote essentially so I
+could type
+
+    daemonize starman --something --etc webapp.psgi
+    ^M^M^M^M^M^M^M^M^M
+
+... and end up with an LSB script in init, because all the default answers to
+the questions were right.
+
+Unfortunately the very first time I tried to use this somewhere else I
+discovered that it wasn't so straightforward, so now I'd like to collect either
+patches or issues on the repository for features or changes that would make this
+script that much more useful.
+
+Essentially the goal is to automate as much of writing the Daemon::Control
+script as possible, and also to have an option to write it out as an init script
+instead of a Perl script.
+
+Welp, just a brief one for day 4. They can't all be deep essays on the holistic
+nature of abstract data.
