@@ -1,0 +1,41 @@
+I'm finding my new position at OpusVL ever more valuable. We like to put extra
+time into getting to the bottom of an issue because we rely so heavily on
+open-source software. Problems we discover in the modules we use are worth
+investigating for their own sake, simply because the amount of time already put
+into the modules by other people is years; years we didn't have to spend
+ourselves.
+
+Today I discovered that, if I ran my L<http://p3rl.org/Catalyst|Catalyst>
+application under C<perl -d>, it didn't actually run at all.
+
+After much involvement from various IRC channels I came to the conclusion that
+the problem was in L<http://p3rl.org/Contextual::Return|Contextual::Return>; or
+rather, the problem was in the 5.14 debugger, since it seems OK in 5.20.
+
+Anyway, Contextual::Return was employed by
+L<http://p3rl.org/DBIx::Class::InflateColumn::Boolean|DBIx::Class::InflateColumn::Boolean>,
+which I was using because SQLite
+L<https://www.sqlite.org/lang_altertable.html|doesn't have ALTER COLUMN>. We
+test L<http://p3rl.org/CatalystX::AppBuilder|components of Catalyst
+applications> as small L<http://p3rl.org/PSGI|PSGI> applications with SQLite
+databases backing them, which has its own problems, but in this case the issue
+was the column in question being C<closed boolean NOT NULL DEFAULT false>, and
+SQLite not translating "false" as anything other than the string "false", and
+then shoving it in a boolean column anyway.
+
+So DBIC faithfully gave me "false" back when I accessed the row, and "false" is
+true, so everything broke.
+
+So I inflated the column.
+
+This all resulted in a
+L<https://rt.cpan.org/Public/Bug/Display.html?id=100827|patch to
+DBIC:IC:Boolean>, authored by L<https://metacpan.org/author/HAARG|haarg>,
+removing the dependency on Contextual::Return entirely.
+
+This may be a case of avoiding rather than fixing the problem, but since the
+problem appears to exist in the 5.14 debugger, the only way to fix that is to
+update to 5.20 - or whenever it was that it was fixed.
+
+It also prompted me to rebuild the SQLite database to remove that default. Turns
+out DBIC doesn't fill in default values when creating rows.

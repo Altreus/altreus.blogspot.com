@@ -1,0 +1,86 @@
+It's common to start off believing that C<()>
+L<http://altreus.blogspot.co.uk/2011/08/lists-and-things-made-of-lists.html|make
+a list>, or create L<http://altreus.blogspot.co.uk/2011/11/in-context.html|list
+context>. That's because you normally see lists first explained as constructing
+arrays:
+
+    my @array = (1,2,3);
+
+and therefore it looks like the parentheses are part of list context.
+
+They aren't. Context in this statement is determined by the assignment operator.
+All the parentheses are doing is grouping up those elements, making sure that
+all the C<,> operators are evaluated before the C<=> is.
+
+There is I<exactly one place> in the whole of Perl where this common
+misconception is actually true.
+
+=h2 LHS of C<=>
+
+On the I<left> of an assignment, parentheses create list context. This is how
+the L<http://search.cpan.org/dist/perlsecret/lib/perlsecret.pod#Goatse|Saturn
+operator> works.
+
+    $x = () = /regex/g;
+    #   |______________|
+
+The marked section is an empty list on the left-hand side of an assignment
+operator: the global match operation is therefore in list context.
+
+=h2 LHS of C<x>
+
+This is a strange one. The parentheses do construct a list, but the stuff inside
+the parentheses does not gain list context.
+
+    my @array = (CONSTANT) x $n;
+
+In this case, C<CONSTANT> - presumably C<sub CONSTANT {...}> - is in list
+context; C<x> gains list context from the C<=>, and C<CONSTANT> inherits it.
+
+    my $str = (CONSTANT) x $n;
+
+Here we have C<x> in scalar context because of C<$str>, and C<CONSTANT> in
+scalar context because of that. This is not really a whole lot of use, however.
+
+=h2 Various Contexts
+
+This sub reports whether it's called in scalar, list or void contextF<1>:
+
+    sub sayctx { say qw(scalar list void)[wantarray // 2] }
+
+Now we can test a few constructs for context:
+
+    # void
+    sayctx;
+
+    # scalar
+    scalar sayctx;
+
+    # scalar
+    my $x = sayctx;
+
+    # list
+    my @x = sayctx;
+
+    # list
+    () = (sayctx) x 1;
+
+    # scalar
+    my $x = (sayctx) x 1;
+
+    # list
+    last for sayctx;
+
+    # scalar
+    while (sayctx) { last }
+
+    # scalar
+    1 if sayctx;
+
+    # scalar, void
+    sayctx if sayctx;
+
+    # scalar, scalar
+    sayctx > sayctx;
+
+=footnote 1 Understanding it is left as an exercise to the reader.
