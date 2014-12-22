@@ -1,0 +1,125 @@
+L<http://p3rl.org/Web::Machine|Web::Machine> is pretty cool because it
+reorganises the way you think about your website's structure, focusing on the
+perspective you should really be starting with in the first place.
+
+Web::Machine encourages you to construct several objects, each of which handles
+a URI by representing the resource to which that URI points.
+
+Remember that URI is a Uniform Resource Identifier.
+L<http://altreus.blogspot.co.uk/2014/10/whats-wrong-with-javascript-in-template.html|We've
+had this discussion.> The parts of the internet that use URIs are based on the
+assumption that they are sharing information about resources, and hence the
+focus is on the resource.
+
+Web::Machine starts with the resource. You construct an object and mount it as
+Plack middleware to handle the URI to that resource. These objects are actually
+the machines. You construct a Web::Machine with a subclass of
+Web::Machine::Resource, and if that's all you want to do, you call C[->to_app]
+on it and plack it up.
+
+Each Web::Machine so constructed is a Plack::Component. That means you can
+bring in a Plack::Builder and mount machines in it.
+
+    my $builder = Plack::Builder->new;
+    $builder->mount(
+        '/resource' => Web::Machine->new( 
+            resource => 'MyApp::Resource'
+        )
+    );
+
+Alternatively, you might prefer to use something like Path::Router, providing
+subs that build Web::Machines based on arguments.
+
+    my $router = Path::Router->new;
+    $router->add_route('/resource/:id' => sub {
+        my ($req, $id) = @_;
+        Web::Machine->new(
+            resource => 'MyApp::Resource',
+            resource_args => [
+                id => $id,
+            ],
+        )
+        ->call($req->env);
+    });
+
+Two things are notable about this particular invocation. First, it is necessary
+to run C<call> on the resulting machine manually. The second is that, now that
+we have actual args coming in, we're seeing how Web::Machine takes an I<array
+ref> for these, not a I<hashref>; i.e. it's an argument list and not required to
+be hash-shaped.
+
+MyApp::Resource is what handles the actual magic: Web::Machine expects certain
+subroutines to be overridden from the base class
+L<http://p3rl.org/Web::Machine::Resource|Web::Machine::Resource> that define
+what this resource can do.
+
+The sensible ones to provide are C<content_types_provided> and the C<to_*>
+filters that define how to represent this resource as the various content types
+it supports.
+
+The documentation lists all of the functions that can be overridden to provide
+behaviour specific to this class.
+
+=h2 RFPR: Web::HyperMachine
+
+I've started taking this a step further. Resources are only part of what makes
+the interwebs work. The other part is the fact the resources are related to each
+other: hypermedia.
+
+Up on the githubs is a start to the module
+L<https://github.com/Altreus/Web-HyperMachine|Web::HyperMachine>, which tries to
+wrap Web::Machine in an understanding of how the resources relate to one
+another. By adding a couple of DSL-like functions to the Resource class it is
+possible to automatically construct the URI schema for the system, using the
+declared names of resources and relationships within the resource classes
+themselves.
+
+The user simply mounts those resources and the machine does the rest:
+
+    #!/usr/bin/perl
+    use strict;
+    use warnings;
+    use Web::HyperMachine;
+
+    my $app = Web::HyperMachine->new;
+    $app->with('MyApp::Resource');      
+    $app->to_app;
+
+And the resource would be e.g.:
+
+    package MyApp::Resource;
+    use strict;
+    use warnings;
+     
+    use parent 'Web::HyperMachine::Resource';
+     
+    __PACKAGE__->uri('resource');
+     
+    our @data = qw( hello hi hey howdy );
+     
+    sub content_types_provided { [{ 'text/html' => 'to_html' }] }
+     
+    sub fetch {
+        my ($self, $id) = @_;
+        return $data[$id];
+    }
+     
+    sub to_html {
+        my $self = shift;
+        my $resource = $self->{resource};
+     
+        q{<h1>} . $resource . q{ world</h1>}
+    }
+     
+    1;
+
+If you plackup that script, you'll find that C</resource/0>F<1> will return an
+HTML page with "Hello world" in it; and other values will correspondingly index
+into the array.
+
+Feedback on this concept is encouraged; it's not been worked on for some time,
+like most things I do, because I got bored of it, because I didn't have an
+actual use for it. 
+
+=footnote 1 If 0 doesn't appear to work, you may have an outdated version of
+Path::Router. The issue tracker says it is fixed on CPAN now.

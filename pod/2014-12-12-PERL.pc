@@ -1,0 +1,20 @@
+L<http://perl-begin.org/learn/Perl-perl-but-not-PERL/|PERL is wrong>. It was
+invented at some point to mean Practical Extraction and Report(ing) Language but
+Perl was never called that originally.
+
+Although I do quite like the interpretation I<Poor Excuse for a Real Language>,
+which unfortunately doesn't initialise to B<PHP>.
+
+There's also a L<http://www.scriptarchive.com/|swathe> of
+L<http://www.tizag.com/perlT/|awful>, L<http://p3rl.org/CGI|ancient> code
+written in Perl.
+
+This legacy dogs Perl's steps, despite the recent rise of Perl like an X-Wing
+rising out of Dagobah swamps.
+
+Thus I propose a naming convention: Anything that can be considered to be
+dragging Modern Perl down be referred to as PERL code. It's clear how PERL is
+indeed a pathetic excuse for a real language. Perl resembles PERL as much as
+Episode IV resembles Episode I.
+
+PERL is dead. Long live Perl.

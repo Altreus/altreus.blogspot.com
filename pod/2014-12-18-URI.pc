@@ -1,0 +1,357 @@
+I've talked a lot about this resource-first way of dealing with the web, and
+really the internet in general, but it isn't a tool that fits all things. For
+instance, today I was looking at the point-of-sale module in
+L<http://odoo.com|Odoo>, which is essentially an HTML representation of the
+index resource of the products in the system, but is actually more complicated
+than that, because it includes that resource, a numeric input box, the bill of
+items so far, a search box, and a few other twiddly bits to improve the
+cashier's use of the system. Plus, it is designed with tablets in mind.
+
+This is quite different from the list of products you get when you look for the
+list of products in Odoo itself.
+
+However, we must construct a URI that refers to this view of the data if we're
+to be able to access that view of the data in the first place. That means that
+we somehow have to shoehorn this not-a-resource idea into the
+everything-is-a-resource idea.
+
+Today I'm going to deconstruct the URI and explain how each part can be used, in
+order to avoid too much in the way of special behaviour. Ideally we'd like every
+resource to be represented by a single URI, but that's clearly not going to
+work.
+
+Allow me to state up front that I consider Odoo's URI scheme to be utterly
+shocking. But it appears to be a legacy from back in the old days when more
+people made web things than really understood what URIs were for.
+
+=h2 The URI
+
+The URI is made up of several parts. Here is what I consider to be the simplest
+URL that contains all common partsF<1>:
+
+    http://www.example.com:8080/resource/id?query=data#part-of-document
+
+    |_____|___|_______|___|____|________|__|__________|_______________|
+       1    2     3     4   5      6     7      8             9
+
++list
+
+=item 1. Schema
+
+=item 2. Subdomain
+
+=item 3. SLDF<2>
+
+=item 4. TLD
+
+=item 5. Port
+
+=item 6. Resource (type) name
+
+=item 7. Resource (instance) identifier
+
+=item 8. Query string
+
+=item 9. URI fragment
+
+-list
+
+Together, I<2>, I<3> and I<4> comprise the I<hostname>; I<6> and I<7> are the
+I<path>.
+
+=h2 Breaking down the URI
+
+=h3 Schema
+
+The schema is the first place where you restrict yourself. Often referred to as
+I<protocol>, the schema usually determines how the URI should be used. In this
+example I<http> is the assumed protocol by which web requests are made. The
+I<http> schema tells the client to use the HTTP protocol to make the request.
+
+This is very useful because it means we can immediately assume a large quantity
+of knowledge about the system that we wouldn't have without the schema.
+Particularly useful is that we know what sort of programs can be used to
+actually access this URLF<3>. This is, if you think about it, what the word
+protocol means: it is those things that are assumed to be the case, given a
+certain situation. When we all follow protocol, we don't need to explain why
+we're doing what we're doing.
+
+Mostly we come across URLs specifying the HTTP schema; in fact, it's assumed, in
+many cases, that a URI with no schema is an HTTP URL, because if you click on
+it, it opens up in your browser. However, some places have started using their
+own schemata, such as the C<spotify:> schema, which opens URLs in the Spotify
+client, or the C<steam:> schema, which opens things with Steam.
+
+It's worth noting that the entire hostname can also be omitted from a URI, but
+this usually means you get I<three> slashes, not two. This is commonly seen with
+the C<file> protocol, such as C<file:///home/user/documents/example.html>; where
+the third C</> is actually part of the path. For this reason it can be observed
+that the C<steam:> schema does not quite follow the normal URI standards, since
+the part immediately following the schema is an action - arguably a resource -
+and not a hostname.
+
+By inventing our own schemata like this we can create entire applications with a
+new way of communicating, but we're focusing on the web here, which means we're
+going to use HTTP(S), like it or lump it.
+
+=h3 Subdomain
+
+The term "subdomain" is a bit of a colloquialism. Each section of the hostname
+is a subdomain for the part to the right. The host name is a hierarchy with, in
+this case, C<com> at the top. We usually call this part the "subdomain" because
+it's the first subdivision that is really relevent to a human.
+
+When we have a subdivided subdomain we sort of stop talking about them and start
+mumbling and saying "that bit" and pointing.
+
+The subdomain is a tool we can use to do many things. Traditionally the web is
+in the C<www> subdomain, but the C<http> protocol is usually sufficient to
+assume web, these days. However, that's starting to change, as we start to send
+non-web things over HTTP. These non-web things are, e.g., the API, or the
+L<http://en.wikipedia.org/wiki/Content_delivery_network|CDN>.
+
+Really consider using an C<api> subdomain for your API. You'll find that if you
+have an C<api> and a C<www>, then your website can have, in the majority, the
+exact same URI structure as the API. This is more often the case than it appears
+to be, because people don't tend to think of their web pages as representing a
+resource in HTML format.
+
+=h3 Domain
+
+The SDL is the part of the domain that really, to a human, represents where the
+site is. This is usually your company or organisation name, or some other thing
+whose entire purpose is to say what this whole web site is about.
+
+You can install a system under multiple domains and thus they would all have the
+exact same URI scheme, except that, because they're in different places, the
+records that you get would be different.
+
+Because C<yoursite.com/user/1> is not the same person as C<mysite.com/user/1>,
+except by coincidence.
+
+I've lumped the TLD in here too, because the TLD is, to most people, part of
+your domain name - which is why we call the subdomain the subdomain regardless
+of where it appears on the actual hostname.
+
+=h3 Port
+
+When designing URI schemes it's helpful to drink a lot of port, for inspiration.
+
+Commonly there are alternative services associated with your website, meaning
+they're on the same domain, and you can't use the subdomain because these other
+services need C<api> and C<www> subdomains of their own.
+
+One trick is to mount these services under a part of the path, and consider them
+a big resource with sub-resources; but easier is to install them on a different
+port.
+
+For example, your L<http://www.elasticsearch.org/|Elasticsearch> instance -
+which communicates entirely via HTTP - can be running on the same hostname as
+your website, but a different port. Elasticsearch's default port is 9200, going
+up to 9300 as you add instances on the same machine.
+
+=h3 Resource name
+
+The first part of the path of the URL I'm calling the resource name. That's
+because this is where the actual resource you're requesting starts. Everything
+before the path is defining whose resource you are asking for, but once the path
+starts you're starting to get a handle on the actual information.
+
+The resource name, when requested, can have multiple behaviours, depending on
+the purpose of the resource, but common is simply to be an index of all the
+items of that type. Since that can be cumbersome, it is perfectly legitimate to
+both paginate this list and summarise the entries. That sort of stuff is well
+out of scope of this article, though.
+
+Other uses of the first part of the path are organisational, and may be handled
+better as a subdomain. For example, having an C<api> part of the path here is
+not as useful as it would be to have an API subdomain, because if the paths to
+the resources can be consistent then we don't have to ask questions about what
+they should be.
+
+    https://www.example.com/resource
+    https://api.example.com/resource
+
+Other times, you may want to use a different port. For example, if the web
+stuff is on port 80 then the administration part could be on port 8080. This
+also allows you to control access to the different parts of the site at the
+kernel level, using routing rather than soft authentication.
+
+    https://www.example.com/admin
+    https://www.example.com:8080
+
+Doing this also means that it's harder to guess the correct path to the admin
+area, since you can use an obscure port. Denying access based on IP rules means
+you'd never report to unauthorised users when they guessed right in the first
+place.
+
+But really, there's no exact reason why you would or would not add parts of the
+path to the URL in order to divide it up into separate logical zones. This can
+certainly help with human comprehension of the purpose of your URL. Sometimes
+you may even want to provide dummy paths - paths that refer to the same resource
+as other paths, but assist with conceptual compartmentalisation by having
+different subpaths.
+
+    https://www.example.com/shop/product/1
+    https://www.example.com/blog/post/1
+
+In these examples, the first part of the path could be omitted, provided that
+C<post> is always the blog post and C<product> is always a shop product.
+Consider also that you could still use subdomains for these.
+
+    https://api.shop.example.com/product/1
+
+The important part would be to ensure that your uses are consistent. Always have
+each part of the URL refer to the same logical division of your resource
+structure.
+
+=h3 Item ID
+
+Once you've decided at which point of the path to put the resource type, you
+should probably put the next part as an optional ID field.
+
+B<The combination of a resource name and an item ID should be entirely sufficient
+to retrieve all the information about that specific instance of that type.>
+
+This is a reasonably central principle to the resource-first model of your
+system - all your things have a I<type> and an I<ID> and that's all you need to
+provide to retrieve it, or at least a representation of it. Everything else is
+your organisational whimsy and the system really shouldn't have to know.
+
+More formally than dismissing it as whimsy, I should point out that even the
+type names and shapes can change, and that's difficult enough to deal with.
+Every level of organisation you add on top of this is another changeable shape
+of the system that at some point you're going to have to adapt. The fewer of
+those you have, the better.
+
+The actual format of your identifier is up to you, but there's really nothing
+else you can put after the resource name that is relevant at this point.
+
+=h3 Query string
+
+If I catch you using a query string to tell a dynamic resource to load a
+specific other resource I will murder you in your sleep.
+
+    https://example.com/index.php?type=resource&id=1234
+
+Seriously, this sort of crap is all over the internet. Yes, it's usually PHP.
+
+You are using a URI - at least put the resource identifier in the resource
+identifier.
+
+It is important to note that the query string is not the same thing as the "GET
+parameters". A query string does not have to be in the format
+C<key=value&key=value> - the web server passes the query string straight to the
+app, and it is the application that decodes it in its own way. It is common to
+use the C<key=value&key=value> structure but not required.
+
+The query string's most obvious purpose is to pass a query to a resource that
+expects one, or that at least accepts one. Often the index resources will allow
+for some sort of search or filter functionality, and if that's not the case then
+special resources designed to search and filter - and possibly concatenate -
+other resources will accept search parameters.
+
+Further specialisation of resources would not even use the KVP format of "GET
+parameters", and simply take the query string as instruction. These types of
+resource are drifting away from the "object" type of resource and moving
+towards "function" resources, which are a separate discussion.
+
+The thing about the query string is that it is usually only relevant to GET
+requests, which is why it is sometimes called the GET string. But GET is an HTTP
+verb and the query string is part of the URL; and URLs don't have to be
+C<http://>, so the query string can really be used against any scheme.
+
+It is often said the query string should not be used to send data to the server,
+but I'm really not sure that's the case. The server should not store data as the
+result of a read request (HTTP's GET), but it is welcome to store data as the
+result of a write request (HTTP's POST or PUT). In which case it is entirely up
+to the server the mechanism by which the data are provided to it.
+
+These are why you should call it the query string, not the GET string.
+
+=h3 Fragment
+
+The part of the URL after the C<#> is called the I<fragment>. This is not
+actually part of the resource identifier, but is provided for the I<client's>
+benefit.
+
+If you click on any of the footnote marks in this documentF<4>, most browsers I
+give a toss about will jump to the footnote, and back again when you click on
+the number of that footnote.
+
+No new page request is made. The browser is not being instructed to access a
+I<different> resource. In the example earlier, the fragment is
+C<#part-of-document>. The fragment is usually used to refer to a part of the
+document. In HTML and XML, this is either by the C<id> or C<name> attributes of
+the elements.
+
+In this document, the C<a> tags that jump around the page have C<name>
+attributes that the browser uses to scroll to them when the URL fragment
+changes, i.e. in these blog-post resources, the parts-of-the-document that I
+refer to with URL fragments are the footnotes and the places the footnotes refer
+to.
+
+Using the document fragment to refer to specific resources is a crime committed
+by many "JavaScript apps" today. The reason this is a crime is that it is not
+identifying the I<resource>; it's identifying the I<resource proxy>, which means
+the correct client must be used to actually access the resource itself. It's
+like having a proprietary browser that only understands a completely different
+URI format.
+
+It's a crime because browsers are more than capable of intercepting URI requests
+inside an application and getting the application to update as necessary, and
+servers are more than capable of returning a javascript-app-with-resource-in-it
+as the HTML representation of the resource.
+
+There is no reason besides lack of imagination to trample all over that URI
+system just to avoid reloading the page every so often.
+
+=h2 TODO
+
+Not mentioned is the idea of a "related resource". This can be a third part of
+the URI path whereby you request an index of a separate resource based on the
+current one:
+
+    https://www.example.com/blog/post/1/comments
+
+This is, conceptually, the same as
+
+    https://www.example.com/blog/comments?post=1
+
+but you may wish to return the results differently, e.g. with more expanded
+objects rather than just URLs to the results.
+
+In upcoming posts we'll probably have a look at those "functional" resources I
+mentioned in passing. This post has been entirely about "object" resources, i.e.
+those resources that simply represent some representation of a real-world
+object, or a fake-world object, but ultimately something that can be represented
+as a JSON object with fields and values. I will also try to discuss the
+resource-first view of website building using the aforementioned point-of-sale
+in Odoo as an example.
+
+We also haven't discussed how it is that you would relate resources to one
+another in knowable ways. This ties in with the hyperlink concept and is the
+thinking behind
+L<http://altreus.blogspot.co.uk/2014/12/day-16-webmachine.html|Web::HyperMachine>
+Z<>- HTML pages are already linked together with C[<a href="related-link">], but
+there are myriad other ways even those use hyperlinks to refer to other
+resources, and even more ways in HTTP itself.
+
+=hr
+
+=footnote 1 I've omitted from this the C<user:pass@> part that can be used
+before the hostname, because it's not very common.
+
+=footnote 2 The "second-level domain" is colloquially the "company" part of the
+name, i.e. the first part that actually identifies at a human-readable level
+what it is the URI refers to. In some cases, such as I<.co.uk>, the TLD is
+actually the SLD (co) and TLD (uk), and it is the third-level domain that is the
+company part. Colloquially, we can refer I<.co.uk> as a TLD, so that this
+remains the SLD.
+
+=footnote 3 A URL is basically a URI that you can actually use. That is, there
+exist URIs that refer to resources but that cannot actually be used to access
+that resource; for example the ISBN URI schema cannot be used to get an actual
+book.
+
+=footnote 4 Like this one.

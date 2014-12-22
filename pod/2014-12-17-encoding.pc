@@ -1,0 +1,24 @@
+There are 127 characters in ASCII and tens of thousands of characters in the
+real world. It is probably an interesting debate, trying to come up with the
+most efficient way of encoding non-ASCII characters without screwing everything
+up.
+
+Don't waste your time. Use UTF-8 and Unicode.
+
+"But what about UTF-16?" B<No.>
+
+"But what about--" B<NO.>
+
+ASCII is included in UTF-8 Unicode. So is everything else. Everyone understands
+it, everything's assuming it, and all the other encodings and charsets are more
+obscure and therefore harder to deal with.
+
+Everyone (except PHP) has UTF-8 Unicode built in to whatever programming
+language they're using.
+
+Unless you're writing for devices with memory measured in bytes and a network
+connection measured in baud then you have time and space to use the bloating of
+UTF-8 Unicode. So suck it up, be inefficient, and accept the VHS of UTF-8 over
+the Betamax of whatever you're looking all cow-eyed at today.
+
+And, in case you were wondering, ASCII is I<never> the right answer.
