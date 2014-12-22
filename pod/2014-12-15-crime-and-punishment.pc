@@ -1,0 +1,237 @@
+In today's post I'm going to try to convince you to think of the interfaces you
+make in terms of punishment, in order to find the path of least punishment.
+
+Here's a perspective for you to consider: when someone uses your system,
+I<they> are doing I<you> a favour. Don't try to yes-but-what-if your way out of
+this; I'm not asserting that it is the case. I am saying that is how you should
+I<consider> it to be. Assume that the user, given the option, will pick an
+alternative system. Design the interface from the point of view that it is the
+very fact people use the system that is the currency that measures its success.
+If people don't like using it, if you make it hard to do, they simply will stop
+doing so.
+
+This is an important perspective if you are a business, because your system
+needs to get the user from state 1, wherein they have their money, to state 2,
+wherein you have their money. If you make that difficult to do, then they won't
+do it. You are not doing them a favour; don't treat them like you are.
+
+=h2 Punishment
+
+Punishment probably makes you think of unwanted tasks doled out to people for
+correction or restitution of some misdemeanour or other. This is a bit of a
+goal-oriented definition, because it implies a perpetrator in the first place;
+i.e. it expects that some misdeed has been undertaken for which recompense
+needs to be made.
+
+People are, of course, falsely accused and given punitive action nevertheless.
+The focal point of the above definition is that of an unwanted task; some chore
+that must be gone through, which one is inconvenienced, perhaps embarrassed or
+humiliated, to do. The concept is one of a strong antipathy or disinclination
+to do the thing; hence it is considered punitive to require that the person do
+it.
+
+=h2 Crime and Punishment
+
+When you design an interaction between a human and a computer you are
+establishing a sequence of events that will allow the user to eventually find
+themselves in a situation whereby the thing they set out to do has been done.
+Within this highly abstracted scenario there are three players:
+
++list
+
+=item You (the entity with which the task is being performed)
+
+=item The user (the entity trying to perform the task)
+
+=item The task (the sequence of events by which the thing moves from not-done
+to done)
+
+-list
+
+This set of three players has implied with it several types of tasks:
+
++list
+
+=item Expected but trivial; these things do not inconvenience
+
+=item Expected but undesirable; the user has prepared for this
+
+=item Unexpected but trivial; these things are minor inconveniences
+
+=item Unexpected and undesirable; necessary evils
+
+=item Unexpected and undesirable I<and avoidable>; B<punishment>
+
+-list
+
+When you design an interface and you've added something to that interface,
+seriously consider whether that thing can be considered punishing the user for
+something they didn't do wrong.
+
+I<Especially> consider whethere it is punishment for something out of their
+control. In many cases it is necessary to inform the user that there was a
+problem; this may seem like punishment, because it is quite undesirable to have
+to go through all that again.
+
+Well, it is. Reduce the impact of problems by not discarding all the
+information the user has entered. If the problem is on your side, don't force
+the user to pick up the pieces, because they won't. If the problem is on their
+side, only require the re-entry of that information - not the entire thing.
+
+And if there isn't a problem, why are you making one?
+
+=h2 Amazon
+
+Amazon punished me recently. They have this 1-Click registered-trademark button
+that allows you to find something you want and have it on its way to you just
+by pressing a button. That's a great feature - they are absolutely doing me a
+favour by having it. And they do me a second favour by letting me amend the
+order for up to 30 minutes after it's created.
+
+Then they punish me for wanting to do that.
+
+If you try to change the delivery address of such an order you are required to
+"confirm" your payment details. Why? They told me (on
+L<https://twitter.com/AmazonHelp/status/543550733946454016|Twitter>) that it
+was a security precaution to prevent others from accessing my personal
+information.
+
+What utter, rotten bullshit. This is rubbish design, pure and simple. If I
+I<didn't> change my delivery address, I would not have to confirm anything!
+This is unexpected, undesirable, and completely avoidable. It is punishment for
+wanting to have it delivered somewhere else. That is not a punishable offence.
+
+=h2 SimplyBe
+
+I get very upset sometimes. SimplyBe are absolutely not the sort of company
+that want me to give them any money. Every single step in between me selecting
+a product and me paying for the product was a pain in the arse.
+
+Here are the necessary evils of buying something online:
+
++list
+
+=item Entering your payment details
+
+=item Telling them where to send the product
+
+-list
+
+I<That is it>. Everything else beyond that is you not doing me a favour.
+Sometimes we accept certain things, like do you want to sign up for the
+newsletter? (No.) But there are really only two things a place needs to know
+about you in order to get your money from your pocket and into theirs. If they
+punish you for trying to do that, go somewhere else.
+
+For the curious, my tirade can also be seen on Twitter, written live as I came
+across the problems with the checkout. Finding it is left as an exercise to the
+reader. Every single tweet in that set is about something I consider a
+punishment, and I consider myself as having been punished for I<wanting to give
+them money>.
+
+=h2 Metro 2033
+
+I first started thinking about interfaces in terms of punishment while playing
+this game, Metro 2033, of which many readers may have heard. It was touted as
+one of the best games of whatever year I missed it in when it first came out.
+It's set in the subway of Moscow - the Metro - where humanity has retreated
+from whatever disaster has yet to be revealed.
+
+The game goes, by stages, from stealth to survival to legging it to brawling to
+just wandering around in a township buying stuff. And it punishes you.
+
+Progress in the game is saved by a checkpoint mechanic, although it doesn't
+tell you where the checkpoints are. All you know is that, if you die, you're
+going to be set back some arbitrary distance; although once you've failed once,
+you know where you're going to go back to.
+
+The game is therefore, at the abstract level, a series of challenges that must
+be overcome in order to progress; failure in a particular challenge sets you
+back to, at best, the start of that challenge or, at worst, the start of the
+level. You don't know where until you fail a challenge, but when you've failed
+a challenge you have some idea of the new worst-case scenario.
+
+The problem is that some challenges are more, well, challenging than others,
+but failing them causes you to have to repeat the less obnoxious ones in order
+to retry the difficult one. In a save-when-you-want game you would simply save
+before you reached the difficult challenge, in order to avoid repeating the
+easy ones more than once.
+
+This reduces the easy challenges to chores, trivial tasks that you gradually
+become adept at and simply have to slog through to try the part you keep
+failing at, until eventually you find the secret to the difficult part. This
+quickly stops being entertaining. 
+
+Games should not be chores. Chores are punishment.
+
+Incidentally, the game (so it calls itself) has another punishment mechanism:
+traps. Consider the welcome form of punishment, whereby you are set back for
+failing a challenge - this is the expected function of a game, since a game is
+supposed to be entertaining by presenting a challenge, and a challenge you
+can't fail is not a challenge at all. The trap I'm talking about is not a trap
+for the character in the game, but a trap for the player. In the game, traps
+are visible and have a disarming mechanism; but traps for the player are
+unexpected, random events. Unexpected, undesirable, but avoidable I<by the
+designer>. 
+
+Twice, so far, the game has required me to be discreet, quiet, stealthy - this
+means I<light off> - and then punished me by leaving traps in the dark. Things
+I cannot have avoided by using skill - points in the game where the only two
+approaches to the challenge would have caused me to fail. Damned if you do, and
+damned if you don't. The only way to beat the challenge is to have failed it
+I<at that point> once already. How do I know there won't be another trap ahead?
+This challenge has become a chore.
+
+=h2 CodecF<1>
+
+Maintain flow. Most of the things I've listed as examples of punishment are
+flow-breaking. Most of the time, the user doesn't want to have to know how to
+perform the task; they need to be prompted to enter information, and as little
+information as possible. Every step along the way is a step further away from
+them achieving their goal, and the value of your system is entirely measured in
+how many people use it to achieve their goals.
+
+Common punishments include:
+
++list
+
+=item Forcing the user to manually type information they use a computer to
+automate in the first place (autofill forms, or refusing to let me paste my
+generated passwords into the confirmation box).
+
+=item Repetition of trivial tasks that shouldn't have to be done at all. 
+
+=item Requirement of information you don't strictly need. 
+
+=item Considering valid data to be invalid because your validation is broken
+(or vice versa).
+
+=item Similarly, rejecting sensible input because you're scared of it (like
+most of my randomly-generated passwords).
+
+=item Pretending to let you do something, and then moving the goalposts and not
+actually doing it.
+
+=item Not providing sufficient information to help the user rectify the problem.
+
+=item Fragmenting input forms across multiple pages.
+
+=item Cramming a single page with too much input.
+
+=item Discarding information because your fragile system shat itself.
+
+=item Choosing difficult fonts and colours to read.
+
+=item Making the user hunt for the next thing they have to do.
+
+=item Related, leaving the user at the end of a process with no confirmation or
+failure message, so they don't know that they're done, or feeling that they
+have to do it all again.
+
+-list
+
+I'm sure if I use the internet for another day I'll be able to double this list
+but you get the idea. For every action the user has to take, is it something
+they've prepared for, and do they actually have to do it?
+
+=footnote 1 [sic]

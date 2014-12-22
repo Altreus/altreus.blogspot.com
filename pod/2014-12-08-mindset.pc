@@ -1,0 +1,234 @@
+It doesn't matter what language you start in. The language doesn't help. The
+problem is you; you're the new developer, the inexperienced green sapling;
+you're the one with no instinct, no sense of
+L<http://en.wikipedia.org/wiki/Code_smell|smell>, and no idea where to begin.
+You probably don't even have a problem you want solving.
+
+Whenever we solve a problem we draw on our knowledge and experience to solve
+it. Knowledge and experience differ like theory and practice do. Knowledge is
+the theory. You can know something because you were told it, and it stuck.
+Arguably, the best way to know something is to understand it; then you know why
+it is the case, and what you really know is more general, more applicable, and
+hence more useful. Experience is practice; you've done this before. Experience
+is the sort of knowledge you need in order to produce a good solution to a
+problem, because experience tells you what the next problem is, and how to
+avoid it now.
+
+Experience alters your thought process.
+
+Today's example comes from irc.freenode.com#perl, where we see a green
+programmer trying to solve a problem:
+
+=h2 Report the powers of two that sum to produce a given integer
+
+That is, break down an integer into the powers of two from which it is
+composed.
+
+Scroll no further if you wish to solve it yourself. In Perl.
+
+No language can provide you, up front, with the knowledge you need to answer
+this question. Most languages have for loops and while loops, and something
+that can raise 2 to a power. But that's all you I<know>. You have a few bits of
+theory, but no experience to draw upon. So your thought process goes something
+like this:
+
++list
+
+=item I can take a number I<n> and find the I<n>th power of two C<2 ** $n>
+
+=item I can store a value and compare it to my target I<num> C[$total > $num]
+
+=item I can loop an indefinite number of times with C<while>
+
+=item The biggest power of two less than I<num> is definitely part of it
+
+-list
+
+You reach the conclusion, using knowledge, that you can subtract
+ever-decreasing numbers from your target, in a loop. Any number that leaves you
+with a positive number simply means you can repeat the process with the new
+number, having remembered that particular power of two.
+
+  use 5.010;
+  use strict;
+  use warnings;
+
+  my $num = shift;
+  my $power = 0;
+
+  $power++ until 2 ** $power > $num;
+  $power--;
+
+  while ( $power ) {
+    if ($num - (2**$power) >= 0) {
+      say "$power (" . (2**$power) . ")";
+      $num -= 2 ** $power;
+    }
+    
+    $power--;
+  }
+
+Z<>
+
+  4 (16)
+  2 (4)
+
+Reasonable. Now here's my thought process:
+
++list
+
+=item They want all powers of two that come together to sum a number
+
+=item That's how binary works
+
+=item We can ask the binary representation of I<num> for all the on bits
+
+=item The positions of those on-bits are the answer.
+
+-list
+
+So we write that.
+
+  say for grep { $_ } map { 2 ** $i++ * $_ } reverse split //, sprintf "%b", shift
+
+This is a one-liner. Try it in C<perl -E'...' 20>, in place of the C<...>.
+
+  4
+  16
+
+OK we'll break it down, but you'll see that each section maps roughly to each
+of the items in that list.
+
+=h3 "They want all powers of two"
+
+The answer is going to be a list. C<say for LIST>, and we have to construct
+LIST. The powers of two have a test for validity, so there's probably a grep.
+C<say for grep { CONDITION } LIST>.
+
+We should really build an array for LIST, and use it at the end.
+
+    use 5.010;
+
+    my @bits;
+    ...
+
+    say for @bits;
+
+=h3 "That's how binary works"
+
+Getting the binary representation of a number is easy; C<sprintf "%b", EXPR>.
+In the one-liner we used C<shift> to take the first command-line argument. We
+can put C<$num> here and save the result of C<sprintf> instead of using it
+directly.
+
+  my $num = shift;
+  my $binary = sprintf "%b", $num;
+
+=h3 "We can ask the binary representation for all the on bits"
+
+How? This is a two-parter. First you have to turn the string into bits. Then
+you have to find the on-bits.
+
+Turning the string into bits is easy - you split it on the gap between
+characters:
+
+  my @bits = split //, $binary;
+
+Not obvious is the finding the on-bits. See, we don't want the actual bits
+themselves; all the on-bits are C<1>, so finding them all would simply tell us
+how many there are. We actually want to know I<where> they are.
+
+Trouble is, C<sprintf> gives us C<10100> for 20. The first bit is the high bit,
+but that has the smallest offset, i.e. it's the 0th digit in that string. And
+the other 1 is the 2th digit. Knowledge tells us that our 20 working example
+should report 4 and 16; but C<2 ** 0> is neither of those, even though C<2 **
+2> is.
+
+The answer to this is actually in the original solution: we have to work
+backwards, biggest number I<last>. That's why we reverse it.
+
+  my @bits = reverse split //, $binary;
+
+=h3 "The positions of those on-bits are the answer"
+
+In the final solution I report the powers of two, not the numbers we raise two
+to, and the positions are the numbers to raise two to, not the power of two to
+that. Clear?
+
+The positions of the on-bits are found using a bit of a naughty C<map>, which
+uses a counter outside its scope. C<map> should really
+L<http://altreus.blogspot.co.uk/2011/10/understanding-and-using-map-and-grep.html|not
+have side-effects>. We can work around this in a proper script, however.
+
+By iterating through the bits and incrementing a counter as we go, we can
+determine the value that this bit represents.
+
+  2 ** $i++
+
+C<$i++> of course returns the value of C<$i> I<before> incrementing it, meaning
+it starts off undefined. We can't have that.
+
+  my $i = 0;
+
+Now we can produce a list of all those values:
+
+  map { 2 ** $i++ } @bits;
+
+Plug this into C<say> for debugging purposes:
+
+  say for map { 2 ** $i++ } @bits;
+  1
+  2
+  4
+  8
+  16
+
+We've lost information - what happened to the fact some of the bits were turned
+off? Although I had this in knowledge, it was experience that reminded me that
+I can multiply:
+
+  map { 2 ** $i++ * $_ } @bits;
+
+That's better - we also should
+L<http://altreus.blogspot.co.uk/2011/10/understanding-and-using-map-and-grep.html|always
+use C<$_> in a C<map>> because C<map> is supposed to transform C<$_>.
+
+  0
+  0
+  4
+  0
+  16
+
+Now we have something we can grep: C<$_> itself!
+
+  my @powers = map { 2 ** $i++ * $_ } @bits;
+  say for grep { $_ } @powers;
+
+This collects all powers, but only reports those with a nonzero value.
+
+We can fix the C<$i> situation by using
+L<http://perldoc.perl.org/functions/keys.html| C<keys>> on C<@bits>. C<keys> on
+an array returns the list of indices, even though they're
+L<http://altreus.blogspot.com/2014/12/different-shapes-of-data.html|not really
+keys>.
+
+  map { 2 ** $_ * $bits[$_] } keys @bits
+
+This uses C<$_> in place of C<$i> (0 to 4), but now that C<$_> is the index, we
+have to get the actual bit value by looking it up in C<@bits>.
+
+=h2 Answers on a postcard, please
+
+Here's the final script, then
+
+  use 5.010;
+  use strict;
+  use warnings;
+
+  my $num = shift;
+  my $binary = sprintf "%b", $num;
+  my @bits = reverse split //, $binary;
+
+  my @powers = map { 2 ** $_ * $bits[$_] } keys @bits;
+
+  say for grep { $_ } @powers;

@@ -1,0 +1,177 @@
+One of the main points of suffrance for PHP is the conflation of what the rest
+of the world consider to be separate data structures: the array and the
+hash/dictionary/map/object/etc. Everyone agrees on the name of the array; less
+so on the name of the hash. We'll stick with hash (but later I'll say object,
+just to troll you).
+
+This conflation is vehemently defended by PHP programmers, but I sense a
+certain cart-before-the-horse expectation if you try to get a PHP programmer to
+realise the problem with it. Which is to say, a PHP programmer has only seen
+PHP do it, and has seen how PHP works around the limitations of doing it, and
+therefore doesn't have the experience of languages with separate types to be
+able to understand intuitively that they are fundamentally different.
+
+I'm not going to directly attack the fact it clearly has limitations, because
+this is acknowledged and understood; and everything has limitations. If we
+didn't have limitations, we wouldn't really have things at all, would we?
+
+It is not the limitations of the aforementioned conflation that make it a
+problem; it is a deeper-seated, fundamental difference; logical in nature.
+Almost mathematically different, like numbers and vectors are.
+
+I'm going to try to formalise the difference. Properly explain it, and make it
+plain.
+
+We can start to understand the difference by scrutinising those very
+workarounds that PHP does use - to cope with the limitations - and the
+inconsistencies that we expect from any PHP anything at all ever.
+
+Consider the
+C<L<http://php.net/manual/en/function.array-merge.php|array_merge>> function:
+
++quote
+
+If the input arrays have the same string keys, then the later value for that
+key will overwrite the previous one. If, however, the arrays contain numeric
+keys, the later value will not overwrite the original value, but will be
+appended.
+
+-quote
+
+And
+
++quote
+
+Values in the input array with numeric keys will be renumbered with
+incrementing keys starting from zero in the result array.F<1>
+
+-quote
+
+=h2 Doublethink
+
+It is being recognised that the structure is performing two functions; the
+first, with string keys, has unique properties. The same value cannot be
+repeated in the structure, because the identifying property of that piece of
+information is its string name: if the array were to have two keys of the same
+name, it would be impossible to distinguish between them on access. We can give
+this concept formal terminology: B<it doesn't make sense>.
+
+We say it does not make sense to have two keys with the same name. Looking at
+this under a semantic microscope we come to the realisation that we've
+accidentally used two different words for the same thing: "key" and "name". The
+key does not I<have> a name; the key I<is> a name. We can't restructure that
+sentence to avoid using both words, because whenever we try the thing we end up
+with doesn't make sense. We're forced to conclude that the reason we can't make
+the sentence make sense is that the concept we're trying to express cannot be
+formally expressed. Something that cannot be formally expressed can only be
+described as wrong, or nonsense, or such other dismissive words. The concept
+does not exist I<to be expressed>.
+
+The second concession this C<array_merge> makes is that numeric keys are
+normally sequential. This, at first glance, appears to point to another
+uniqueness of key; two keys in an ordinal array will never be the same, for the
+exact same reason: the key is the key, and any access of that key will
+inevitably refer to the value associated with it.
+
+Why, then, this acknowledgement that numeric keys are expected to be
+sequential? That is, why, if merging two arrays with numeric keys, do we
+concatenate, instead of overwrite?
+
+This question starts to show the fundamental difference between the data
+structures. The principle is that of purpose. 
+
+=h2 Shape of a hash
+
+String names are often called I<properties>. This is because they:
+
++list
+
+=item Tend to refer to a real-world attribute of a real-world concept, such as
+a person's name or an item's weight.
+
+=item Don't make sense independently of the item. A person's name isn't a
+person's name if the person isn't involved. "Name" is meaningless if you don't
+know what it's the name I<of>.
+
+=item Together, as a collection, sufficiently define the object being described.
+
+-list
+
+Last things last, because that's important. All the properties of an object
+together define sufficient information about the object to perform all
+necessary tasks I<with> that object, within the system. I'm saying object
+because that's a word we use both in the real world and in programming. An
+object in an object-oriented system has I<properties>, or I<attributes>. And
+observe that it is the I<set of attributes>, not their names, that define the
+data structure.
+
+A hash, or associative array, or whatever, is defining a I<single thing>. The
+keys of this hash are the properties that are required to capture the important
+information about that item, just as the properties of an object are.
+
+We will call the set of keys, or properties, that the hash has its B<shape>. We
+can consider that formal terminology as wellF<2>.
+
+=h2 Shapes of arrays
+
+It is not infeasible that an object can have a numerical property. This is
+often proscribed by programming languages, who won't let you start property
+names with numerical values when defining classes, but we're talking about
+hashes here. They can take any string value and use it as a property for this
+object.
+
+For example, perhaps this object's keys are all identifiers into other things,
+and all values are boolean. It's an object representing associations between
+other things. A node on a graph, perhaps, storing other nodes' identifiers as
+keys, and boolean values determining whether there's a link to it.
+
+A stretch, but not totally crap.
+
+What of the ordinal array then? This is just it: the index you use to access an
+item in an array is I<not a property of the array>.
+
+We can actually see this best in a Java scenario: in Java, an array is an
+object that contains other objects. But the array has properties of its own; a
+length, a max length, a stored data type. It has functions that can be run on
+it: push, pop, splice, etc. It does I<not> have a property called I<0>, a
+property called I<1>, etc. It is a completely different thing.
+
+In C++ the same structure (an array with flexible size) is called a C<Vector>.
+This is apt. Arrays are vector structures. The thing that PHP calls a "key" is
+actually an I<index>; I already used the word, and so does PHP,
+interchangeably. But it is not a key! A key is a I<property> of the data
+structure; an index is a I<position> in the data structure, not a property
+I<of> the data structure.
+
+The array is a line; a mathematical, one-dimensional structure. At integer
+points along its length can be found data of arbitrary type. But these are not
+properties of the array, any more than the values described by a line on a
+graph are properties of the line. The fact these things are in order - 0, 1, 2,
+3 - is a phenomenon that I<follows on> from the fact we're sticking more things
+onto the end. The ordering of the items in the array is not defined by the
+indicies; the indices are defined by the ordering. The data in the array
+defines the shape of the array.
+
+The hash is a bag; a lookup table. There is no graph that can describe a hash,
+because there is no natural ordering to the keys in it. Strings don't have
+natural ordering: "a" is only before "b" because we invented "a" and "b" and
+put them in that order. We didn't invent 1 or 2 and we didn't make 2 bigger
+than 1.F<3> Is your name before or after your height? That doesn't make sense!
+
+The fundamental difference is there, then. The keys to an array are defined by
+the data in it, but the keys to a hash define the data that goes in it.
+
+=footnote 1 A salient question at this point is I<how do you know whether it is
+a string or not?>. Is C<"0010"> a string? If not, is it the number 10 or the
+number 2 or the number 8? All four things are valid interpretations under
+commonly-used rules.
+
+=footnote 2 As with all language, it doesn't matter what noises or
+letter-strings we use to define a concept. The important thing is that we all
+understand the same thing when we hear or see it. Let this word stand for the
+scope of this post; but you'll likely see the term "the shape of the data"
+referred to quite a lot in general.
+
+=footnote 3 We invented the I<symbols> 1 and 2, but we didn't invent the platonic
+integers that 1 and 2 refer to. There was 1 earth before we evolved on it and
+used the symbol 1 to represent this number.
