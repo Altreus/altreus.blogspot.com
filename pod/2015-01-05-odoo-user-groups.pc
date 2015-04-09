@@ -1,0 +1,25 @@
+Odoo has a user group concept that, if you Google for errors, crops up all the
+time. Odd that when you first run Odoo, you can't assign users to groups.
+
+The answer is you have to give the Administrator user the "Technical Features"
+feature in Usability. Navigate to Settings > Users, click Administrator, click
+Edit, check the relevant box, click Save, and finally refresh.
+
+If you L<https://www.google.co.uk/search?q=odoo+8+groups|Google for it>, there's
+hardly any information on the subject. However, Odoo is quite happy to
+occasionally tell you what groups you need to be a part of in order to access
+something.
+
+User groups are access control, so it's common that you'd want to create levels
+of access and assign the user to them. I first discovered an issue with this
+when trying the Project Management module - trying which was the entire point of
+me running Odoo 8 in the first place. (I can't reproduce the problem now that
+it's a new year. Maybe Odoo's NYR is to be less whiny.)
+
+You can run a L<https://www.docker.com/|Docker> container with Odoo 8 in it from
+the L<https://github.com/tinyerp/odoo-docker|tinyerp/odoo-docker> github repo;
+either the Debian or the Ubuntu version should work fine.F<1>
+
+=footnote 1 I recommend the Debian version, since Ubuntu is just Debian with
+extra, irrelevant stuff bundled in, making it not entirely useful to have an
+Ubuntu version in the first place. Licensing is probably involved.

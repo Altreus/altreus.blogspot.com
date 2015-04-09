@@ -1,0 +1,124 @@
+There are more operations in the heaven and earth,
+L<http://p3rl.org/HTML::FormFu|HTML::FormFu>, than exist in your philosophy.
+
+I don't like HTML::FormFu, and you shouldn't, either.
+
+It seems like a really cool idea. Instead of having to write html, body, div,
+form action equals invalid-empty-attribute-but-who-cares enctype blah blah input
+blah select...
+
+You just write a YAML file that describes the form, and output it in your
+template.
+
+    elements:
+      - type: Select
+        options:
+          - this and that
+          - or you can
+          - populate this
+          - in the controller
+
+      - type: Submit
+
+Great.
+
+Why doesn't it work?
+
+Have you seen the size of some of the Catalyst actions we have, entirely to
+amend this form on one side or the other of the data being posted? Huge.
+
+You see, HTML::FormFu can only accommodate a subset of the things you actually
+do with forms. Common validation, common exceptions, common this and that. You
+end up with modules upon modules of specialised inflators and deflators just to
+accommodate your uncommon case that doesn't come with it.
+
+Then, when you come to represent the form actually as HTML, you realise that
+you have to pick the form apart because you can't get it to structure itself in
+the way you need for your particular CSS. So what used to be a simple matter of
+
+    [% form | none %]
+
+has now become
+
+    <form action="" method="post">
+        [% IF some_condition %]
+            <div class="form-field">
+                <label for="field-name">
+                    [% form.get_all_element('field-name').render | none %]
+                </label>
+            </div>
+        [% END %]
+    </form>
+
+with some judicious application of controller code too:
+
+    if ($resource->is_in_some_state) {
+        for my $field (qw/irrelevant or immutable fields/) {
+            $form->get_all_element($field)
+                ->attributes({ disabled => 'disabled' })
+        }
+    }
+
+Which requires even I<more> logic because disabled fields
+L<http://www.w3.org/TR/html5/forms.html#constructing-form-data-set|don't get
+posted>, meaning if the control is a required field, it has to not be required
+if it's disabled - and you normally disable things so that you can't change them
+from their current value when the resource is in some particular state. Which
+means the value that it I<already has> isn't posted, and so the required field
+fails its constraint without extra logic.  Extra logic that HTML::FormFu didn't
+consider. And that's just one example.
+
+But is this the root problem? Well no, not really. The root problem is that the
+form is a I<representation of a resource>. The only real difference here is that
+the resource's I<metadata> are being shown; not a specific tuple, but the shape
+of the records themselves. The form is representing the I<type>, not an instance
+of the type.
+
+This means that it should be the thing that defines the structure of this
+resource that represents what the form should look like.
+
+What I mean is, if you're displaying a form for e.g. a person, the thing that
+defines the C<person> resource already has enough information about this
+resource for you to be able to construct the necessary inputs.
+
+From the resource-first view of a system, the concept of "a resource" is
+divorced from any of its representations just as an integer is a platonic ideal
+that is independent of any of the ways we can represent it. It is the idea of a
+structure; it is the shape of the data without any data.
+
+If you're making a YAML file that defines the form then 90% of it is redundant,
+repeated information.
+
+Any extra fields you add to a form to facilitate the user's interaction with it
+only apply when you're displaying the form in an HTML context anyway, because
+the same metadata represented in, say, JSON format will use something
+L<http://json-schema.org/|completely different> to define the structure of the
+resource.
+
+As with all my rants recently, HTML::FormFu is committing the fatal mistake of
+thinking that its point of focus is somehow independent from the system being
+modelled. It isn't. A form is a human-readable representation of the structure
+of a resource; the only modification necessary should be those things that make
+it clearer, to the user, what the purpose of each field is.
+
+Remember that you can improve the usability of the form itself by
+L<http://altreus.blogspot.co.uk/2014/10/whats-wrong-with-javascript-in-template.html|
+creating custom behaviour>, simply by using HTML semantics to define new types
+of input and labelling your fields as being of that type instead of the other.
+
+It looks a bit like I've directly associated the behaviour of a form field with
+the type of data being stored. Personally, I think that's a generally sensible
+way of going about it; after all, you can infer the majority of the way a form
+should be displayed based on the type of information expected. However, it's
+obvious that, sometimes, it's going to be better to display the field in a
+different way (say, sliders for numeric input) without changing the actual type
+of the field.
+
+Well, any behaviour that you can't infer from all the information about the
+field (or that you could infer, but doesn't suit this particular instance) is
+the point of the controller. The controller should contain one or two exceptions
+I<max>, not logic for literally every single field in the form.
+
+Because if your controller is making up for the shortcomings of more than one or
+two of the fields, have you actually gained anything by using HTML::FormFu in
+the first place?

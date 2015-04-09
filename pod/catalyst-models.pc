@@ -1,0 +1,54 @@
+A Catalyst model is simply a package in the MyApp::Model namespace.
+
+  $c->model('DBIC')
+
+simply returns
+
+  "MyApp::Model::DBIC"
+
+I recently spent some time at work trying to work out quite how Catalyst models
+work with relation to, well, everything else.
+
+Our app structure is based on CatalystX::AppBuilder, and I needed to add a model
+to one of the components, in order to provide a caching layer in the right
+place.
+
+The mistake I'd been making was that the Schema subclass is I<not> the same
+thing as the model. Rather, the model is an interface I<into> the Schema class.
+Essentially, I had one class too few.
+
+Once I'd realised the above rule it was easy enough to create
+C<MyApp::Extension::Model::DBIC>.
+
+Following suit with the existing config, I wanted to configure the new model
+with the same shorthand as the other ones:
+
+    <Model::DBIC>
+    </Model::DBIC>
+
+This makes sense; if I do C[$c->model('DBIC')] I'll get C["MyApp::Model::DBIC"],
+and that'll be configured with the C[Model::DBIC] part of the config.
+
+What I'd missed here was that we were mixing CatalystX::AppBuilder with
+CatalystX::InjectComponent:
+
+    package MyApp::Extension;
+    use CatalystX::InjectComponent;
+
+    after 'setup_components' => sub {
+        my $class = shift;
+
+        ...
+
+        CatalystX::InjectComponent->inject(
+            into      => $class,
+            component => __PACKAGE__ . '::Model::DBIC',
+            as        => 'Model::DBIC',
+        );
+    }
+
+This was the missing part - the stuff I<inside> the CatalystX::AppBuilder
+component was itself built up out of other components, aliasing their
+namespace-specific models so that C[$c->model] would return the appropriate
+class.
+

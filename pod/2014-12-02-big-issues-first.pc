@@ -1,0 +1,105 @@
+Here at work, because we work flexible hours and on various clients' projects,
+it is cromulent that we have a system whereby we can log hours spent against
+said clients, and their projects.
+
+Having recently arrived at the company, the weirdnesses of this system were
+fresh in my mind when there was a call to arms to do something about it, which
+meant I had a certain unique perspective on the problems, i.e. that of someone
+who isn't used to it yet.
+
+=h2 Issue 1: Time worked today
+
+When entering time, one navigates to a page representing the day in question,
+then from there a time entry can be made.
+
+The odd thing here is that it's on the time entry page that the input appears to
+enter the total time worked that day. This is a disjunct because it means that
+if you change the input on one of these pages, it changes on the other pages.
+
+=h2 Issue 2: Individual times
+
+Each time entry is a separate page, accessed via the day's page. The day itself
+has no form on it, no POST handler, so no data can be entered on this page. A
+series of links to existing time entries, plus a new-entry button, exists.
+
+=h2 Issue 3: I don't know this!
+
+More data than I would consider necessary is, indeed, necessary for this time
+entry.
+
+Our systems are generally connected via LDAP, or they have extra data storable
+against users in the realm of each system, or both. Additionally, most systems
+have or can have an API besides the HTML interface designed for human use.
+
+We should be able to provide sensible defaults for most data in this form.
+
+=h1 Solutions
+
+Identified are three main issues, apparent from using the system for the first
+time, and not easily forgotten until you're so used to the system you don't
+really mind that they're problematic. But this isn't where I started solving the
+problem and designing a new interface.
+
+I started solving the problem from the perspective of how I would actually want
+to do this task.
+
+=h2 Solvable problems
+
+See, the three things above are issues with the current system, sure; but you
+can't really solve problems in a current system. I mean, sure, you can solve
+I<bugs> in current systems, but you can't solve actual systemic problems in the
+current system. Hopefully, my wording makes it clear why: the system I<is> the
+problem.
+
+You can't solve problems with a system by solving them within the system,
+because solving individual issues with the system inevitably involves solving
+issues with things that surround these parts of the system. A system is a series
+of interconnected functions; if a piece of functionality isn't connected somehow
+to some part of the system then it's not part of the system, and you would never
+have identified it as a problem in the first place.
+
+This means that, to a greater or lesser extent, altering part of a system has
+consequences on the parts of the system it's connected to.
+
+It also, tritely, means that if you're altering a system, it can't very well be
+considered the same system.
+
+It's often better to step back and find problems you I<can> solve, and these
+turn out to be problems that I<still need solving>. The purpose of these systems
+is to provide solutions to problems: problems don't have to be those in the
+sense of complications or difficulties, but also in the sense of questions,
+conundrums, or simply something that needs doing that isn't being done.
+
+=h2 Two Modus Operandi
+
+I discovered I used the time logger in two ways. The first was at the end of the
+day, primarily when I'd been working on a single thing all day, for some
+multiple-day task. The second was periodically, during the day, when I finished
+small tasks.
+
+Sometimes I would do a combination of these, where the day's task was just
+whatever time I hadn't billed to other, unrelated things I did during the day.
+
+An extra thing I do semi-regularly is to alter the details about a piece of
+work, because I discovered it was billed to a different project, or suchlike.
+
+What I really wanted to be able to do was to see the whole day's work laid out
+at once, and to then edit or add at leisure. Finally, at the end of the day, I
+would close the day, provided the total amount of time spent on tasks that day
+equalled the amount of time I claimed to have been in the office that day.
+Otherwise, I would have to adjust the time I'd spent in the office, or bill more
+time. Or less time.
+
+This was the basis for the new layout. Everything on one page, and already
+editable. This immediately removed a huge quantity of the interactions necessary
+to perform the tasks; the only link you had to follow would be the link to the
+day you want to closeF<1>. No need to click through to create a new entry or
+edit existing entries.
+
+This assisted with the first issue, the repetition of the time-today field. By
+showing the day, rather than the item in the day, we got the opportunity to show
+fields associated with the day.
+
+=footnote 1 An obvious improvement would be to go to today, but it's common
+enough that we, or at least I, would come back to previous days at the end of a
+several-day task, so listing unfinished days seemed best.
