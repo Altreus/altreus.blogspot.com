@@ -17,11 +17,40 @@ The mistake I'd been making was that the Schema subclass is I<not> the same
 thing as the model. Rather, the model is an interface I<into> the Schema class.
 Essentially, I had one class too few.
 
-Once I'd realised the above rule it was easy enough to create
-C<MyApp::Extension::Model::DBIC>.
+You can determine that by creating a new Catalyst application and then running
+the helper script that creates a model from an existing schema. You get a class
+like this:
 
-Following suit with the existing config, I wanted to configure the new model
-with the same shorthand as the other ones:
+
+    package Testapp::Model::FilmDB;
+
+    use strict;
+    use base 'Catalyst::Model::DBIC::Schema';
+
+    __PACKAGE__->config(
+        schema_class => 'MyApp::Schema::FilmDB',
+        
+        connect_info => {
+            dsn => 'dbi:mysql:filmdb',
+            user => 'dbusername',
+            password => 'dbpass',
+        }
+    );
+
+A C<Model> class is created and it points to the C<Schema> class, being your
+actual DBIC schema.
+
+
+Once I'd realised the above rule it was easy enough to create
+C<MyApp::Extension::Model::DBIC> to go alongside C<MyApp::Extension::Schema>.
+
+Further confusion arose with the configuration. There appeared to be no existing
+configuration that matched any of the extant classes in the application or its
+components. However, it was clear which was the DBIC model configuration because
+of the DSN.
+
+I wanted to follow suit with the new module, which meant that some how I had to
+map the real name to the config name.
 
     <Model::DBIC>
     </Model::DBIC>
@@ -52,3 +81,5 @@ component was itself built up out of other components, aliasing their
 namespace-specific models so that C[$c->model] would return the appropriate
 class.
 
+Now, C<Model::DBIC> refers to C<MyApp::Extension::Model::DBIC>, which is an
+interface into C<MyApp::Extension::Schema>.
