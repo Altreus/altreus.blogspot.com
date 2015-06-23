@@ -148,6 +148,14 @@ types to be under a single name. Thus:
     <td>@var{'key1', 'key2'}</td>
     <td>%var</td>
   </tr>
+  <tr>
+    <td>%var[0,1]</td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>%var{'key1, 'key2}</td>
+    <td>%var</td>
+  </tr>
   </table>
 
 -html
@@ -277,6 +285,16 @@ comes from in various situations:
   </tr>
   <tr>
     <td>@</td>
+    <td>{ }</td>
+    <td>%var</td>
+  </tr>
+  <tr>
+    <td>%</td>
+    <td>[ ]</td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>%</td>
     <td>{ }</td>
     <td>%var</td>
   </tr>
