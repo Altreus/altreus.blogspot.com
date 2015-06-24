@@ -27,16 +27,16 @@ up. It also shows the number of items each expression will return.
     <td>1</td>
   </tr>
   <tr>
-    <td>%</td>
-    <td>hash</td>
-    <td></td>
-    <td>Many pairs</td>
-  </tr>
-  <tr>
     <td>@</td>
     <td>array</td>
     <td></td>
     <td>Many</td>
+  </tr>
+  <tr>
+    <td>%</td>
+    <td>hash</td>
+    <td></td>
+    <td>Many pairs</td>
   </tr>
   <tr>
     <td>$</td>
@@ -61,6 +61,18 @@ up. It also shows the number of items each expression will return.
     <td>hash</td>
     <td>{'key1', 'key2'}</td>
     <td>Many</td>
+  </tr>
+  <tr>
+    <td>%</td>
+    <td>array</td>
+    <td>[0,1,2]</td>
+    <td>Many pairs</td>
+  </tr>
+  <tr>
+    <td>%</td>
+    <td>hash</td>
+    <td>{'key1', 'key2'}</td>
+    <td>Many pairs</td>
   </tr>
   </table>
 
