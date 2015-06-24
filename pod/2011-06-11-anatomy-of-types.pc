@@ -148,6 +148,14 @@ types to be under a single name. Thus:
     <td>@var{'key1', 'key2'}</td>
     <td>%var</td>
   </tr>
+  <tr>
+    <td>%var[0,1]</td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>%var{'key1, 'key2}</td>
+    <td>%var</td>
+  </tr>
   </table>
 
 -html
@@ -203,6 +211,19 @@ B<A warning about hash slices>
 Remember to use the C<@> instead of the C<$> when taking a hash slice. The
 syntax of putting a list in the subscript to get a scalar refers to a
 long-deprecated feature that you never want to use intentionally.
+
+=h4 Key-Value/Index-Value Slices
+
+We've seen how you can use C<$> and a subscript to get a single scalar, we've
+seen how you can use C<@> and a subscript to get a list of values. You can also
+(as of perl 5.20) use C<%> and a subscript to get an index-value or key-value
+pair.
+
+  my %part = %whole{'relevant', 'parts', 'only'};
+  my %index_value = %things[0,3,5];
+
+This kind of slice returns a pair for each thing you're slicing; both the key
+or index as well as the value.
 
 =h4 Working Backwards
 
@@ -264,6 +285,16 @@ comes from in various situations:
   </tr>
   <tr>
     <td>@</td>
+    <td>{ }</td>
+    <td>%var</td>
+  </tr>
+  <tr>
+    <td>%</td>
+    <td>[ ]</td>
+    <td>@var</td>
+  </tr>
+  <tr>
+    <td>%</td>
     <td>{ }</td>
     <td>%var</td>
   </tr>
