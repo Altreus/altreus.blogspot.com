@@ -1,0 +1,46 @@
+At work we use Catalyst. Catalyst apps can be (should be?) built up from
+multiple modules, in the sense of distribution. This allows them to be modular,
+which is kind of why they're called modules.
+
+That means each project is a directory full of directories, most of which
+represent Perl modules, and most of which depend on each other.  In order to
+deploy we throw this list at C<cpanm> (L<http://cpanmin.us>) and let C<cpanm>
+install them all. 
+
+This works by accident, because they're all installed already, and so module X
+depending on module Y is normally OK because Y will be updated during the
+process.
+
+For a fresh installation, C<cpanm> will fail to install many of them because
+their prerequisites are in the installation list:
+
+    $ cpanm X Y
+    --> Working on X
+    ...
+    -> FAIL Installing the dependencies failed: 'Y' is not installed
+    --> Working on Y
+    ...
+    -> OK
+    Successfully installed Y
+
+Now Y is installed, but not X.
+
+I wrote a script to reorder them.
+L<https://gist.github.com/Altreus/26c33421c36cc1eee68c>
+
+    $ installation-order X Y
+    Y X
+
+    $ cpanm $(installation-order X Y)
+    --> Working on Y
+    ...
+    -> OK
+    Successfully installed Y
+    --> Working on X
+    ...
+    -> OK
+    Successfully installed X
+
+This will use the same information that C<cpanm> used in the first place to
+complain that Y was not installed; which is to say, if a dependency is missing,
+the original C<cpanm> invocation would not have failed anyway.
