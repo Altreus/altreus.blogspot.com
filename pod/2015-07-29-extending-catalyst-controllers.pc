@@ -1,0 +1,408 @@
+Our API is versioned. Any change made to the API requires a new version at some
+level or another.
+
+    /api/v1/customers
+    /api/v1.1/customers
+    /api/v1.1.1/customers
+
+Additionally, some of the URLs may want to be aliased
+
+    /api/v1.0.0/customers
+
+When I got to the code we had Catalyst controllers based on
+L<Catalyst::Controller::REST>, which looked somewhat like this:
+
+    package OurApp::Controller::API::v1::Customer;
+    use Moose;
+    BEGIN { extends 'Catalyst::Controller::REST'; };
+
+    sub index
+        : Path('/api/v1/customer') 
+        : Args(1)
+        : Does('REST')
+    {
+        # ... fetch and stash customer
+    }
+
+    sub index_GET
+        : Action
+    {
+    }
+
+    1;
+
+In order to extend this API, well, I faffed around a bit. I needed to add a
+new v1.1 controller that had all the methods available to this v1 controller,
+plus a new one. It needed to be done quickly, and nothing really stood out as
+obvious to me at the time.
+
+So I used C<detach>.
+
+    package OurApp::Controller::API::v1_1::Customer;
+    use Moose;
+    BEGIN { extends 'Catalyst::Controller::REST'; };
+
+    sub index
+        : Path('/api/v1.1/customer') 
+        : Args(1)
+        : Does('REST')
+    { }
+
+    sub index_GET
+        : Action
+    {
+        my ($self, $c) = @_;
+        $c->detach('/api/v1/customer/index');
+    }
+
+    1;
+
+This had the effect of creating new paths under C</api/v1.1/> that simply
+detached to their counterparts. 
+
+The problem with this particular controller is that in v1.0 it only had GET
+defined. That meant it only had C<index> defined, and so the customer object
+itself was fetched in the C<index> method, ready for C<index_GET>. I needed a
+second method that also used the customer object: this meant I had to refactor
+the C<index> methods to use a chained loader, which the new method could also
+use.
+
+    sub get_customer
+        : Chained('/')
+        : PathPart('api/v1.1/customer') 
+        : CaptureArgs(1)
+    {
+        # ... fetch and stash the customer
+    }
+
+    sub index
+        : PathPart('')
+        : Chained('get_customer')
+        : Args(0)
+        : Does('REST')
+    { }
+
+    sub index_GET
+        : Action
+    {
+        my ($self, $c) = @_;
+        $c->detach('/api/v1.1/customer/index');
+    }
+
+    sub address
+        : PathPart('address')
+        : Chained('get_customer')
+        : Args(0)
+        : Does('REST')
+    {}
+
+    sub address_GET
+        : Action
+    {
+        # ... get address from stashed customer
+    }
+
+The argument that used to terminate the URL is now in the middle of the URL for
+the address: C</api/v1.1/customer/$ID/address>. So it's gone from C<: Args(1)>
+on the C<index> action to C<: CaptureArgs(1)> on the C<get_customer> action.
+
+The problem now is that I can't use C<detach> in v1.1.1, because we'd be
+detaching mid-chain.
+
+I hadF<1> to use C<goto>.
+
+    package OurApp::Controller::API::v1_1_1::Customer;
+    use Moose;
+    BEGIN { extends 'Catalyst::Controller::REST'; };
+
+    sub get_customer
+        : Chained('/')
+        : PathPart('api/v1.1.1/customer') 
+        : CaptureArgs(1)
+    {
+        goto &OurApp::Controller::API::v1_1::Customer::get_customer;
+    }
+
+    #...
+    1;
+
+This was fine, except I also introduced a validation method that was I<not> an
+action; it was simply a method on the controller that validated customers for
+POST and PUT.
+
+
+    sub index_POST
+        : Action
+    {
+        my ($self, $c) = @_;
+        my $data = $c->req->data;
+
+        $self->_validate($c, $data);
+    }
+
+    sub _validate {
+        # ...
+    }
+
+In version 1.1.1, the only change was to augment validation; phone numbers were
+now constrained, where previously they were not.
+
+It seemed like a ridiculous quantity of effort to clone the entire directory of
+controllers, change all the numbers to 1.1.1, and hack in a C<goto>, just
+because I couldn't use Moose's C<after> method modifier on C<_validate>.
+
+Why couldn't I? Because I couldn't use
+C<OurApp::Controller::API::v1_1::Customer> as the base class for
+C<OurApp::Controller::API::v1_1_1::Customer>.
+
+Why? Because the paths were hard-coded in the Paths and PathParts!
+
+This was the moment of clarity. That is not the correct way of specifying the
+paths.
+
+=h2 To Every Controller, A Path
+
+There is actually already a controller at every level of our API.
+
+
+    OurApp::Controller::API
+    OurApp::Controller::API::v1
+    OurApp::Controller::API::v1_1
+    OurApp::Controller::API::v1_1_1
+    OurApp::Controller::API::v1_1_1::Customer
+
+This means we can add path information at every level. It's important to
+remember the controller namespace has nothing to do with C<Chained> actions -
+The C<: Chained(path)> and C<: PathPart(path)> attributes can contain basically
+anything, allowing any path to be constructed from any controller.
+
+In practice, this is a bad idea, because the first thing you want to know when
+you look at a path is how it's defined; and you don't want to have to pick apart
+the debug output when you could simply make assumptions based on a consistent
+association between controllers and paths.
+
+But there is a way of associating the controller with the chained path, and
+that's by use of the C<path> config setting and the C<: PathPrefix> and C<:
+ChainedParent> attributes. Both of these react to the I<current controller>,
+meaning that if you subclass the controller, the result changes.
+
+First I made the v1 controller have just the C<v1> path.
+
+    package OurApp::Controller::API::v1;
+    use Moose;
+    BEGIN { extends 'Catalyst::Controller'; };
+
+    __PACKAGE__->config
+    (
+        path => 'v1',
+    );
+
+    sub api
+        : ChainedParent
+        : PathPrefix
+        : CaptureArgs(0)
+    {}
+    
+    1;
+
+Then I gave the API controller the C<api> path.
+
+    package OurApp::Controller::API;
+    use Moose;
+    BEGIN { extends 'Catalyst::Controller'; };
+
+    __PACKAGE__->config
+    (
+        path => '/api',
+    );
+
+    sub api
+        : Chained
+        : PathPrefix
+        : CaptureArgs(0)
+    {}
+    
+    1;
+
+=h2 This Tomato Is Not A Fruit
+
+You may be wondering, why isn't C<::v1> an extension of C<::API> itself? It's
+100% to do with the number of path parts we need. The C<::API> controller
+defines a C[ path => '/api' ], while the C<::API::v1> controller defines
+C[ path => 'v1' ]. If the latter extended the former, it would I<inherit> the methods
+rather than C<chaining> them, i.e. C<v1> would I<override> rather than
+I<extend > C</api>.
+
+So we have one controller per layer, but things in the same layer can inherit.
+
+    package OurApp::Controller::API::v1::Customer;
+    use Moose;
+    BEGIN { extends 'Catalyst::Controller::REST'; };
+
+    __PACKAGE__->config
+    (
+        path => 'customer',
+    );
+
+    sub index
+        : Chained('../api')
+        : PathPrefix
+        : Args(1)
+        : Does('REST')
+    {}
+
+    sub index_GET {}
+
+    1;
+
+Z<>
+   
+    package OurApp::Controller::API::v1_1;
+
+    use Moose;
+    BEGIN { extends 'OurApp::Controller::API::v1'; };
+
+    __PACKAGE__->config
+    (
+        path => 'v1.1',
+    );
+
+    1;
+
+
+The reason we can inherit is that everything we've done is I<relative>.
+
++list
+
+=item C<ChainedParent> 
+
+This causes C<::API::v1::api> to be chained from C<::API::v1::api>, but when
+inherited, causes C<::API::v1_1::api> to be chained from C<::API::v1_1::api>.
+
+=item C<Chained('../api')>
+
+This causes C<::API::v1::Customer::index> to be chained from C<::API::v1::api>,
+but when we inherit it, the new C<::API::v1_1::Customer::index> will be
+chained from C<::API::v1_1::api>.
+
+=item C<PathPrefix>
+
+This causes these methods to have the PathPart of their controller's
+C<path_prefix>. The most important example of this is in C<::API::v1>. Here, we
+see the C<api> method configured with it:
+
+    sub api
+        : ChainedParent
+        : PathPrefix
+        : CaptureArgs(0)
+    {}
+
+-list
+
+
+This last is the central part of the whole deal. This means that the
+configuration C[ path => 'v1' ] causes I<this> chain to have the PathPart
+C<v1>. When we inherit from this class, we simply redefine C<path>, as we did in
+the v1.1 controller above:
+
+    __PACKAGE__->config( path => 'v1.1' );
+
+The code above wasn't abbreviated. That was the entirety of the controller.
+
+We can also create the relevant Customer controller in the same way:
+
+    package OurApp::Controller::API::v1_1::Customer;
+    use Moose;
+    BEGIN { extends 'OurApp::Controller::API::v1::Customer'; };
+    1;
+
+This is even shorter because we don't have to even change the C<path>! All we
+need to do is establish that there I<is> a controller called
+C<::API::v1_1::Customer> and the standard path stuff will take care of the rest.
+
+Equally, you can alias the I<same> version with the same trick:
+
+    package OurApp::Controller::API::v1_0;
+    use Moose;
+    BEGIN { extends 'OurApp::Controller::API::v1'; };
+    __PACKAGE__->config( path => 'v1.0' );
+    1;
+
+And of course the whole point of this is that now you can extend your API.
+
+    package OurApp::Controller::API::v1_1::Customer
+    use Moose;
+    BEGIN { extends 'OurApp::Controller::API::v1::Customer'; };
+
+    sub index_PUT { }
+
+    sub _validate {}
+
+    1;
+
+This is where I came in. Now I can extend v1.1 into v1.1.1 and use Moose's
+C<around> or C<after> to change the way C<_validate> works I<only for v1.1.1>,
+and thus I have extended my API in code as well as in principle.
+
+=h2 CatalystX::AppBuilder
+
+We're actually using L<CatalystX::AppBuilder>. This makes subclassing the entire
+API tree even easier, because you can inject v1 controllers as v1.1 controllers.
+
+    after 'setup_components' => sub {
+        my $class = shift;
+       
+        $class->add_paths(__PACKAGE__);
+        
+        CatalystX::InjectComponent->inject(
+            into      => $class,
+            component => 'OurApp::Controller::API',
+            as        => 'Controller::API'
+        );
+        CatalystX::InjectComponent->inject(
+            into      => $class,
+            component => 'OurApp::Controller::API::v1',
+            as        => 'Controller::API::v1'
+        );
+        CatalystX::InjectComponent->inject(
+            into      => $class,
+            component => 'OurApp::Controller::API::v1_1',
+            as        => 'Controller::API::v1_1'
+        );
+
+        for my $version (qw/v1 v1_1/) {
+            CatalystX::InjectComponent->inject(
+                into      => $class,
+                component => 'OurApp::Controller::API::' . $version . '::Customers',
+                as        => 'Controller::API::' . $version . '::Customers'
+            );
+
+            for my $controller (qw/Addresses Products/) {
+                CatalystX::InjectComponent->inject(
+                    into      => $class,
+                    component => 'OurApp::Controller::API::v1::' .  $controller, # sic!
+                    as        => 'Controller::API::' . $version . '::' .  $controller
+                );
+            }
+        }
+    };
+
+Now we've injected all controllers that weren't changed simply by using the v1
+controller as both the v1 and the v1.1 controllers; and the Customer controller,
+which was subclassed, has had the v1.1 version added explicitly.
+
+The only thing we can't get away with injecting with different names are
+subclassed controllers themselves. Obviously that includes the v1.1 Customer
+controller because that's the one with new functionality, but don't forget it is
+also necessary to have a C<v1_1> controller in the first place in order to
+override the C<path> config of its parent.
+
+We would also have to create subclasses if we wanted to alias C<v1> into C<v1.0>
+and C<v1.0.0>. That is the limitation of this, and it's a few lines of
+boilerplate to do so; but it's considerably better than an entire suite of
+copy-pasted controllers using C<goto>.
+
+I expect there's a good way to perform this particular form of injection
+I<without> CatalystX::AppBuilder, but I don't know it. Comments welcome.
+
+=footnote 1 Chose.
