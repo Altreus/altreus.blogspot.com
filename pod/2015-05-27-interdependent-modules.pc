@@ -44,3 +44,18 @@ L<https://gist.github.com/Altreus/26c33421c36cc1eee68c>
 This will use the same information that C<cpanm> used in the first place to
 complain that Y was not installed; which is to say, if a dependency is missing,
 the original C<cpanm> invocation would not have failed anyway.
+
+=h3 Update
+
+It is worth noting that cpanm can install from directories; and it will always
+try this if the module name starts with C<./>.
+
+Therefore, X and Y above can be the result of a glob, so long as you include the
+C<./> in the glob:
+
+    $ echo ./*
+    ./Module1 ./Module2
+    $ installation-order ./*
+    ./Module2 ./Module1
+
+It will also work with absolute paths.
