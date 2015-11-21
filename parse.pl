@@ -33,6 +33,11 @@ for my $file (@files) {
     say $html_fn;
     say $file;
 
-    $html_out->print($pc->{html}->as_html());
+    if ($ARGV{d}) {
+        print $pc->as_html;
+    }
+    else {
+        $html_out->print($pc->as_html);
+    }
 }
 

@@ -5,8 +5,9 @@ use 5.010;
 
 use parent qw(Pod::Cats);
 
-use String::Tagged::HTML;
-use List::Util qw(reduce);
+use HTML::Element;
+use HTML::TreeBuilder;
+use List::Util qw(reduce any);
 use Digest::SHA qw(sha1_hex);
 
 our @COMMANDS = qw(
@@ -24,7 +25,8 @@ sub new {
     my $self = (shift)->SUPER::new(@_);
 
     $self->{sha} = sha1_hex $self->{post_name};
-    $self->{html} = String::Tagged::HTML->new('');
+    $self->{html} = HTML::Element->new('div');
+    $self->{_html_ctx} = $self->{html};
     return $self;
 }
 
@@ -32,48 +34,41 @@ sub handle_command {
     my $self = shift;
 
     my $command = shift;
-    my $str = reduce { $a . $b } make_str(@_, "\n");
 
-    grep $_ eq $command, @COMMANDS or die "Not a command: $command";
+    any {$_ eq $command} @COMMANDS or die "Not a command: $command";
 
     if ($command =~ /h\d/) {
-        $str->apply_tag(0, $str->length - 1, $command => 1);
-        $self->{html} .= $str;
+        $self->add_element($command => @_);
     }
     if ($command eq 'hr') {
-        $self->{html} .= String::Tagged::HTML->new_raw('<hr />');
+        $self->add_element('hr');
     }
     if ($command eq 'notice') {
-        $str->apply_tag(0, $str->length - 1, p => { class => "notice" });
-        $self->{html} .= $str;
+        $self->add_element(p => @_, { class => 'notice' });
     }
     if ($command eq 'footnote') {
-        my ($num) = $str =~ /(\d+)/;
+        my ($num) = $_[0] =~ s/(\d+)//;
 
-        $str->apply_tag($-[0], $+[0], a => {
-            href => "#fn-$self->{sha}-$num",
-            name => "footnote-$self->{sha}-$num"
-        });
-        $str->apply_tag($-[0], $+[0], sup => 1);
-        $str->apply_tag(0, length $str, p => { class => 'footnote' });
-        $self->{html} .= $str;
+        $self->add_element(sup => [
+            'a', $num, @_, {
+                href => sprintf('#fn-%s-$d', $self->{sha}, $num),
+                name => sprintf('footnote-%s-%d', $self->{sha}, $num),
+                class => 'footnote-to',
+            },
+        ]);
     }
 
     if ($command eq 'item') {
-        $str->apply_tag(0, $str->length - 1, li => 1);
-        $self->{html} .= $str;
+        $self->add_element( li => @_ );
     }
 
     if ($command eq 'head') {
         if (! $self->{table_head}) {
-            $self->{html} .= String::Tagged::HTML->new_raw('<tr>');
+            $self->{table_head} = $self->add_element('tr');
         }
 
         $self->{tr_size}++;
-        $self->{table_head} = 1;
-
-        $str->apply_tag(0, $str->length - 1, th => 1);
-        $self->{html} .= $str;
+        $self->{table_head}->push_content([th => @_]);
     }
 
     if ($command eq 'cell') {
@@ -82,35 +77,28 @@ sub handle_command {
             return;
         }
         if ($self->{table_head}) {
-            $self->{html} .= String::Tagged::HTML->new_raw('</tr>' . "\n");
+            # It stays in $self->{html} of course
             delete $self->{table_head};
         }
 
-        if (! $self->{cell}) {
-            $self->{html} .= String::Tagged::HTML->new_raw('<tr>' . "\n");
+        if (! $self->{table_row}) {
+            $self->{table_row} = $self->add_element('tr');
         }
 
-        $str->apply_tag(0, $str->length - 1, td => 1);
-        $self->{html} .= $str;
+        $self->{table_row}->push_content([td => @_]);
 
-        if (++$self->{cell} == $self->{tr_size}) {
-            $self->{html} .= String::Tagged::HTML->new_raw('</tr>' . "\n");
-            $self->{cell} = 0;
+        if ($self->{table_row}->content_list == $self->{tr_size}) {
+            delete $self->{table_row};
         }
     }
     if ($command eq 'img') {
-        # FIXME: use a DOM builder
-        my @data = split ' ', $str;
-        my $img = qq(<img src="$data[0]");
+        my @data = split ' ', $_[0];
 
-        if ($data[1]) {
-            $img .= qq( width="$data[1]");
-        }
-        if ($data[2]) {
-            $img .= qq( height="$data[2]");
-        }
-        $img .= '>';
-        $self->{html} .= String::Tagged::HTML->new_raw($img . "\n");
+        $self->add_element(img => {
+            src => $data[0],
+            $data[1] ? (width => $data[1]) : (),
+            $data[2] ? (height => $data[2]) : (),
+        });
     }
 }
 
@@ -120,13 +108,13 @@ sub handle_begin {
     my @params = @_;
 
     if ($command eq 'list') {
-        $self->{html} .= String::Tagged::HTML->new_raw('<ul>');
+        $self->enter_element('ul');
     }
     elsif ($command eq 'table') {
-        $self->{html} .= String::Tagged::HTML->new_raw('<table>' . "\n");
+        $self->enter_element('table')
     }
     elsif ($command eq 'quote') {
-        $self->{html} .= String::Tagged::HTML->new_raw('<blockquote>' . "\n");
+        $self->enter_element('blockquote')
     }
     elsif ($command eq 'html') {
         $self->{raw} = 1;
@@ -138,15 +126,15 @@ sub handle_end {
     my $command = shift;
 
     if ($command eq 'list') {
-        $self->{html} .= String::Tagged::HTML->new_raw('</ul>');
+        $self->end_element('ul');
     }
     elsif ($command eq 'table') {
-        $self->{html} .= String::Tagged::HTML->new_raw('</table>' . "\n");
+        $self->end_element('table');
         delete $self->{tr_size};
         delete $self->{cell};
     }
     elsif ($command eq 'quote') {
-        $self->{html} .= String::Tagged::HTML->new_raw('</blockquote>' . "\n");
+        $self->end_element('blockquote');
     }
     elsif ($command eq 'html') {
         $self->{raw} = 0;
@@ -157,13 +145,11 @@ sub handle_paragraph {
     my $self = shift;
 
     if ($self->{raw}) {
-        $self->{html} .= String::Tagged::HTML->new_raw(join '', @_);
+        $self->add_raw(@_);
         return;
     }
 
-    my $str = reduce { $a . $b } make_str(@_, "\n");
-    $str->apply_tag(0, $str->length - 1, p => 1);
-    $self->{html} .= $str;
+    $self->add_element( p => @_ );
 }
 
 sub handle_verbatim {
@@ -171,15 +157,17 @@ sub handle_verbatim {
     my $para = $self->SUPER::handle_verbatim(@_);
 
     if ($self->{raw}) {
-        $self->{html} .= String::Tagged::HTML->new_raw(join '', @_);
+        $self->add_raw(@_);
         return;
     }
 
-    my $str = make_str($para . "\n");
-    $str->apply_tag(0, $str->length - 1, pre => 1);
-    $self->{html} .= $str;
+    $self->add_element( pre => @_ );
 }
 
+# in handle_entity we return arrayrefs. Pod::Cats will nest them appropriately.
+# Eventually, the nested LoL will end up in handle_paragraph, or similar; at
+# which point, add_element will just see a list-of-lists and HTML::Element
+# should DTRT.
 sub handle_entity {
     my $self = shift;
     my $entity = shift;
@@ -192,9 +180,7 @@ sub handle_entity {
     }->{$entity};
 
     if ($simple) {
-        my $str = reduce { $a . $b } make_str(@content);
-        $str->apply_tag(0, $str->length, $simple => 1);
-        return $str;
+        return [ $simple => @content ];
     }
 
     if ($entity eq 'L') {
@@ -207,36 +193,56 @@ sub handle_entity {
             $link = "https://metacpan.org/module/$link";
         }
 
-        my $str = reduce { $a . $b } make_str($text, @content);
-        $str->apply_tag(0, $str->length, a => { href => $link });
-        return $str;
+        return [ a => { href => $link }, @content ];
     }
 
     # F for Footnote - links to the =footnote of the same $num
     if ($entity eq 'F') {
         my $num = $content[0];
-        my $str = make_str($num);
-        $str->apply_tag(0, length $num, a => {
-            href => "#footnote-$self->{sha}-$num",
-            name => "fn-$self->{sha}-$num"
-        });
-        $str->apply_tag(0, length $num, sup => 1);
-        return $str;
+        return [
+            sup => [
+                a => {
+                    href => "#footnote-$self->{sha}-$num",
+                    name => "fn-$self->{sha}-$num",
+                    class => 'footnote-from',
+                }
+            ]
+        ];
     }
 
     if ($entity eq 'N') {
-        return String::Tagged::HTML->new_raw('<br/>' . "\n");
+        return [ 'br' ];
     }
 
-    return make_str($self->SUPER::handle_entity($entity, @content));
+    die "Unhandled entity $entity";
 }
 
-sub make_str {
-    if (wantarray) {
-        return map { scalar make_str($_) } @_;
-    }
-    else {
-        return ref $_[0] ? $_[0] : String::Tagged::HTML->new($_[0])
-    }
+sub add_element {
+    my $self = shift;
+    $self->{_html_ctx}->push_content(\@_);
 }
+
+sub enter_element {
+    my $self = shift;
+    $self->{_html_ctx} = $self->{_html_ctx}->push_content(\@_);
+}
+
+# Pod::Cats dies for us if the syntax is bad.
+sub end_element {
+    my $self = shift;
+    $self->{_html_ctx} = $self->{_html_ctx}->parent;
+}
+
+sub add_raw {
+    my $self = shift;
+    $self->{_html_ctx}->push_content(
+        HTML::TreeBuilder->parse_content($_[0])->disembowel
+    );
+}
+
+sub as_html {
+    my $self = shift;
+    return join '', map { $_->as_HTML('<&>', '  '), "\n" } $self->{html}->content_list;
+}
+
 1;
