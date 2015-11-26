@@ -19,7 +19,7 @@ L<Catalyst::Controller::REST>, which looked somewhat like this:
     sub index
         : Path('/api/v1/customer') 
         : Args(1)
-        : Does('REST')
+        : ActionClass('REST')
     {
         # ... fetch and stash customer
     }
@@ -45,7 +45,7 @@ So I used C<detach>.
     sub index
         : Path('/api/v1.1/customer') 
         : Args(1)
-        : Does('REST')
+        : ActionClass('REST')
     { }
 
     sub index_GET
@@ -79,7 +79,7 @@ use.
         : PathPart('')
         : Chained('get_customer')
         : Args(0)
-        : Does('REST')
+        : ActionClass('REST')
     { }
 
     sub index_GET
@@ -93,7 +93,7 @@ use.
         : PathPart('address')
         : Chained('get_customer')
         : Args(0)
-        : Does('REST')
+        : ActionClass('REST')
     {}
 
     sub address_GET
@@ -248,7 +248,7 @@ So we have one controller per layer, but things in the same layer can inherit.
         : Chained('../api')
         : PathPrefix
         : Args(1)
-        : Does('REST')
+        : ActionClass('REST')
     {}
 
     sub index_GET {}
