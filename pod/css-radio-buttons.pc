@@ -1,0 +1,406 @@
+One of my prime directives is to output HTML that describes the thing that the
+HTML represents. This might seem like a daft thing to say, but the point is that
+it should be HTML that does not have a bunch of unnecessary stuff, and that does
+not replace working markup with markup designed for Javascript or CSS.
+
+The fact of it all is, what works for machines doesn't necessarily work for
+humans. HTML has two ways of getting people to pick one value from a list of
+items: select boxes and radio buttons. In this example, I wanted actual buttons.
+
+I would say it is unfortunate that we are using L<HTML::FormFu>, but in fact it
+is probably a minor benefit: it encouraged me to find a way to turn real form
+controls into a more human-friendly version of the same.
+
+Here's the HTML that FormFu output.
+
+    <fieldset class="radiogroup label">
+        <legend>Type</legend>
+        <span class="field field-type">
+            <span>
+                <input
+                    name="type"
+                    type="radio"
+                    value="string"
+                    checked="checked"
+                    id="formfield_type_%r_1"
+                />
+                <label 
+                    for="formfield_type_%r_1"
+                    title="Simple text"
+                >
+                    Simple text
+                </label>
+            </span>
+            <span>
+                <input
+                    name="type"
+                    type="radio"
+                    value="multi"
+                    id="formfield_type_%r_2"
+                />
+                <label
+                    for="formfield_type_%r_2"
+                    title="Multi-line text"
+                >
+                    Multi
+                </label>
+            </span>
+            <span>
+                <input
+                    name="type"
+                    type="radio"
+                    value="json"
+                    id="formfield_type_%r_3"
+                />
+                <label
+                    for="formfield_type_%r_3"
+                    title="Raw JSON"
+                >
+                    Json
+                </label>
+            </span>
+        </span>
+    </fieldset>
+
+I've spread it out a bit for legibility, but there it is. Notwithstanding
+FormFu's indifference to populating ID fields with sensible values, this
+actually renders as a sensible set of three linked radio buttons.
+
+=img res/css-radio-buttons-1.png
+
+This is good because we can use standard Javascript to listen to events on the
+inputs. Naturally we use jQuery for this, because standard Javascript is just a
+nuisance to write.
+
+    $('.field.field-type').on('change', setFieldType('.field.field-value'));
+
+For some C<setFieldType> that swaps the type of field dependent on the radio
+button's valueF<1>.
+
+However, it looks silly. Or at least, it could be more user-friendly. Perhaps
+it could look more like this:
+
+=img res/css-radio-buttons-2.png
+
+Here's the markup for that.
+
+    <fieldset class="radiogroup label">
+        <legend>Type</legend>
+        <span>
+            <a 
+                class="button icon-only js-string" 
+                href="#"
+                title="Simple string"
+            ><i class="fa fa-ellipsis-h></i></a>
+            <a 
+                class="button icon-only js-multi" 
+                href="#"
+                title="Multiline string"
+            ><i class="fa fa-align-left></i></a>
+            <a 
+                class="button icon-only js-json" 
+                href="#"
+                title="Raw JSON"
+            ><i class="fa fa-code></i></a>
+        </span>
+    </fieldset>
+
+This is I<completely> different.
+
++list
+
+=item HTML::FormFu is enough of a headache without having to try to add custom
+markup like this inside the form.
+
+=item The javascript now has to listen to click events on C[<a>] elements.
+
+=item Radio buttons have built-in logic to make sure others are deselected when
+we click one; now we have to reïmplement that.
+
+=item Theoretically, we can write a generic JS library that does something like
+"swap out elements based on an input's value"; but now we can't use it.
+
+=item Radio buttons are recognised by accessibility technology and as
+such the user can be made aware that they can select one of a number of options.
+Now they are only aware that they can select from one of three links with no
+destination.
+
+=item The same technology should understand fieldsets, and thus relate the
+legend of the fieldset to the field(s) within it. There are no fields in our
+fieldset any more.
+
+=item The value of the radio button will not be posted with the rest of the
+form, so we have to reïmplement I<that> logic in Javascript as well.
+
+-list
+
+What I want is to make the first look like the second.
+
+=h1 CSS hackery
+
+=h2 1. Hide the inputs
+
+The radio buttons will be toggled whether or not you can actually see them,
+provided you can click on the labels. This is precisely why labels are so
+important; done correctly, they represent both a human-readable indication of
+what the element is for and a clickable target that vastly improves the ability
+to interact with the element.
+
+    .field.field-type input {
+        display: none;
+    }
+
+=h2 2. Add the icons
+
+Might as well get to the meat of this. The way this all works is to use the
+C<:before> pseudo-element in CSS. The C<:before> pseudo-element targets the
+zero-width area before the element itself; the C<:after> element targets the
+area after the element.
+
+By putting stuff here we can alter the contents of the element.
+
+We start with the knowledge that the icons we use are going to be
+L<FontAwesome|https://fortawesome.github.io/Font-Awesome/> icons.
+
+    .field.field-type label:before {
+        font-family: FontAwesome;
+    }
+
+Next, we need to know which icon to use. To do this we can use the L<FontAwesome
+cheat sheet|https://fortawesome.github.io/Font-Awesome/cheatsheet/> to find the
+codepoints for the icons we want; for example, C<fa-align-left> is C<&#xf036;>.
+This is the HTML-escaped version of the icon; it represents codepoint C<F036> in
+hex.
+
+Since we want a different icon for each label we need three CSS rules.
+
+    .field.field-type input[value=string] + label:before {
+        content: "\f141";
+    }
+
+    .field.field-type input[value=multi] + label:before {
+        content: "\f036";
+    }
+
+    .field.field-type input[value=json] + label:before {
+        content: "\f121";
+    }
+
+=img res/css-radio-buttons-3.png
+
+An excellent 5-minute video on pseudo-elements can be found
+L<here|http://www.atozcss.com/intermediate/video/css-pseudo-elements/>.
+
+=h2 3. Hide the labels
+
+This is awkward. If we set the labels to C<display: none> we can't see the
+C<:before> content any more.
+
+    .field.field-type input + label {
+        display: none;
+    }
+
+=img res/css-radio-buttons-4.png
+
+In fact, if you paw at Chrome, you'll see that the C<::before> pseudo-element
+has left the DOM.
+
+=img res/css-radio-buttons-5.png
+
+=img res/css-radio-buttons-6.png
+
+However, if we set C<visibility: hidden>, the whole lot goes away, but the
+C<::before> element sticks around. This implies we can style it, and indeed we
+can:
+
+    .field.field-type input + label {
+        visibility: hidden;
+    }
+
+    .field.field-type input + label:before {
+        visibility: visible;
+    }
+
+=img res/css-radio-buttons-7.png
+
+But alas! The labels are invisible, but this is just like setting C<opacity: 0>;
+they still take up space.
+
+We need to make them go away, but we can't set a width on them, apparently:
+
+    .field.field-type input + label {
+        visibility: hidden;
+        width: 1em;
+    }
+
+If you add this rule, you'll find it has no effect.
+
+=img res/css-radio-buttons-7.png
+
+That's to do with the display style of labels, which is C<inline> by default.
+Only C<block> elements can be given widths, but C<block> has other semantics:
+specifically, it breaks the line, irrespective of its width.
+
+=img res/css-radio-buttons-8.png
+
+If you're wondering why they look funny, try making them visible again:
+
+=img res/css-radio-buttons-9.png
+
+The C<width> of 1em has caused the first one to break at the space, but the
+others don't have a space on which to break.
+
+Most people will tell you that the way to connect these together is to C<float:
+left>, then rearrange them so they stack up correctly, and set a C<clearfix>
+hack so that the stuff underneath it doesn't overlap it. 
+
+In this screenshot it happens that the field below already has this hack, but
+notice that even though they are stacked correctly, there is still space being
+caused by the line break in the first label:
+
+=img res/css-radio-buttons-10.png
+
+This C<float> trick is baloney.  To get both C<inline> and C<block> semantics we
+use C<inline-block>. The C<block> part lets us set the element's width, and the
+C<inline> part makes it inline, so we don't have to use C<float> and HTML hacks.
+
+Remember, whenever you've added stuff to the HTML in order to make the CSS work,
+that's a shortcoming of CSS. There are many of these, and often you'll make HTML
+that is entirely there for the benefit of CSS, but if you don't have to,
+don't.F<3>
+
+To avoid the unwanted whitespace, we simply tell it not to wrap whitespace.
+
+    .field.field-type input + label {
+        visibility: hidden;
+        width: 1em;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+=img res/css-radio-buttons-10.png
+
+=h2 4. Make buttons
+
+This C<::before> element is really there. We can make it work just like any
+other element, setting its border, display, background, etc. So we shall.
+
+
+    .field.field-type input + label:before {
+        border: 1px solid #aaa;
+        border-radius: 20%;
+        display: inline-block;
+        width: 2em;
+        line-height: 2em;
+        text-align: center;
+        background: linear-gradient(to bottom, #feffff 0%,#ddf1f9 35%,#a0d8ef 100%);
+        cursor: pointer;
+    }
+
+We also add a margin to the labels themselves, to spread them out a bit.
+
+    .field.field-type input + label {
+        margin-right: 0.4em;
+    }
+
+These should be all self-explanatory. The C<width> works because of
+C<inline-block>. Note that it is wider than the C<label> itself; this ensures
+that the entire width of the button is due to this C<::before> pseudo-element,
+and not because of the C<label> itself.
+
+The C<linear-gradient> property was generated with L<this gradient
+editor|http://www.colorzilla.com/gradient-editor/>.
+
+The C<pointer> cursor is the finger one you get when you hover over a link.
+
+The C<line-height> is a trick you can use instead of setting the C<height> of an
+element. Text is vertically centred in the line, based on the baseline defined
+by the fontF<2>. But the height of the element has no effect on where the text
+goes. Thus, by setting C<line-height> instead of C<height>, the text is
+vertically centred, and the height of the element comes from the height of the
+text line.
+
+=img res/css-radio-buttons-11.png With C<line-height>.
+
+=img res/css-radio-buttons-12.png With C<height>. The buttons are actually
+slightly taller because C<height> is computed differentlyF<4>.
+
+=h2 5. Show the selected one
+
+This one's funky. You can tell which one is selected because CSS gives us the
+state selector C<:checked>. That means you can request the label that is
+I<after> the checked input, and futz with its background.
+
+    .field.field-type input:checked + label:before {
+        background: linear-gradient(to top, #feffff 0%,#ddf1f9 35%,#a0d8ef 100%);
+    }
+
+All I did here was to invert the gradient of the C<:before> pseudo-element of
+the C<label> element that immediately follows an C<input> element that is
+checked.
+
+=h1 Summarising
+
+When you click on the C<::before> pseudo-element it activates the label it is
+part of. The browser behaviour of this is to change the state of the C<input> it
+is attached to. All labels do this, provided your HTML is correct.
+
+Since these C<label>s are attached to radio buttons, activating one selects the
+corresponding option. This causes the DOM to update the C<:checked> status of
+the C<input> element, which causes the CSS to recalculate which one gets the
+inverted background gradient.
+
+It also causes the form to have the same semantics it always did: there is a
+form control that represents the "type" parameter of the resource, and it has
+three options.
+
+This means that both the form's action—our controller—and the client-side
+Javascript code can simply ask the form for the value of the C<type> element and
+react accordingly. 
+
+It also means the Javascript can use standard events to handle the change of an
+input value to respond to it.
+
+The browser already knows how to ensure that only one radio button is selected;
+we don't have to write special Javascript that unsets the value of the related
+checkboxes, because we haven't made false checkboxes.
+
+And for anyone with difficulties using the web, the CSS can be ignored
+completely. The browser will still behave exactly the same—as will the backend
+controller—if the user sees (or otherwise; maybe they're read by a screen
+reader) three radio buttons instead.
+
+=footnote 1 The actual code for this is awkward because HTML::FormFu makes it
+difficult to create suitable fields to switch between. Instead, there are fields
+hard-coded in the HTML which are removed by the JS.
+
+    var input = {};
+    input.multi = $('.templates .js-value-multi').detach();
+    input.string = $('.templates .js-value-string').detach();
+    input.json = $('.templates .js-value-json').detach();
+
+    function setFieldType(selector) {
+        return function(event) {
+            var $field = $(selector);
+            var type = event.srcElement.value;
+
+            var $newField = input[type];
+            var c = $field.attr('class');
+            $field.removeAttr('class');
+            $newField.attr('class', c);
+
+            $field.replaceWith($newField);
+        }
+    }
+
+=footnote 2 So am I given to understand.
+
+=footnote 3 Actually I did have to change the form for this. The C[<input>] has
+to go before the C[<label>] because CSS cannot look backwards because it
+[expletive deleted] sucks donkey [expletive deleted] and [expletive deleted]
+developers use it as a [expletive deleted] excuse to not have to implement such
+features because they're too [expletive deleted] difficult. Shortcomings, as
+mentioned.
+
+=footnote 4 A good video on the box model is
+L<here|http://www.atozcss.com/beginner/video/the-css-box-model/>.
