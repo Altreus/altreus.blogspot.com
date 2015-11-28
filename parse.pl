@@ -27,7 +27,6 @@ for my $file (@files) {
         next;
     }
 
-    open my $html_out, ">", $html_fn or warn "Could not open $html_fn: $!", next;
     $pc->parse_file($file);
 
     say $html_fn;
@@ -37,6 +36,7 @@ for my $file (@files) {
         print $pc->as_html;
     }
     else {
+        open my $html_out, ">", $html_fn or die "Could not open $html_fn: $!", next;
         $html_out->print($pc->as_html);
     }
 }
