@@ -15,6 +15,7 @@ our @COMMANDS = qw(
     notice footnote
     item img
     head cell
+    quote
 );
 
 our @BLOCKS = qw(
@@ -99,6 +100,10 @@ sub handle_command {
             $data[1] ? (width => $data[1]) : (),
             $data[2] ? (height => $data[2]) : (),
         });
+    }
+
+    if ($command eq 'quote') {
+        $self->add_element(blockquote => @_);
     }
 }
 
