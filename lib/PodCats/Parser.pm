@@ -229,7 +229,9 @@ sub add_element {
 
 sub enter_element {
     my $self = shift;
-    $self->{_html_ctx} = $self->{_html_ctx}->push_content(\@_);
+    my $element = HTML::Element->new_from_lol(\@_);
+    $self->{_html_ctx}->push_content($element);
+    $self->{_html_ctx} = $element;
 }
 
 # Pod::Cats dies for us if the syntax is bad.
