@@ -205,7 +205,7 @@ First I made the v1 controller have just the C<v1> path.
     
     1;
 
-Then I gave the API controller the C<api> path.
+Then I gave the API controller the C<api> pathF<2>.
 
     package OurApp::Controller::API;
     use Moose;
@@ -213,7 +213,7 @@ Then I gave the API controller the C<api> path.
 
     __PACKAGE__->config
     (
-        path => '/api',
+        path => 'api',
     );
 
     sub api
@@ -228,7 +228,7 @@ Then I gave the API controller the C<api> path.
 
 You may be wondering, why isn't C<::v1> an extension of C<::API> itself? It's
 100% to do with the number of path parts we need. The C<::API> controller
-defines a C[ path => '/api' ], while the C<::API::v1> controller defines
+defines a C[ path => 'api' ], while the C<::API::v1> controller defines
 C[ path => 'v1' ]. If the latter extended the former, it would I<inherit> the methods
 rather than C<chaining> them, i.e. C<v1> would I<override> rather than
 I<extend > C</api>.
@@ -406,3 +406,7 @@ I expect there's a good way to perform this particular form of injection
 I<without> CatalystX::AppBuilder, but I don't know it. Comments welcome.
 
 =footnote 1 Chose.
+
+=footnote 2 B<Updated> - thanks to vigilant readers, we noticed that C[path =>
+'/api'] was invalid: C<PathPrefix> is an alias to C<PathPart> and C<PathPart>
+cannot contain absolute paths. It works without the leading C</>.
