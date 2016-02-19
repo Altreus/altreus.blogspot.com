@@ -243,7 +243,7 @@ sub end_element {
 sub add_raw {
     my $self = shift;
     $self->{_html_ctx}->push_content(
-        HTML::TreeBuilder->parse_content($_[0])->disembowel
+        HTML::TreeBuilder->new->parse_content($_[0])->disembowel
     );
 }
 
