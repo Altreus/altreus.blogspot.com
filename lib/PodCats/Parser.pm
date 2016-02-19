@@ -52,7 +52,7 @@ sub handle_command {
 
         $self->add_element(sup => [
             'a', $num, @_, {
-                href => sprintf('#fn-%s-$d', $self->{sha}, $num),
+                href => sprintf('#fn-%s-%d', $self->{sha}, $num),
                 name => sprintf('footnote-%s-%d', $self->{sha}, $num),
                 class => 'footnote-to',
             },
