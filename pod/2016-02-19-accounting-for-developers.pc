@@ -1,0 +1,99 @@
+I know what you're thinking. There's no accounting for developers. You're
+funny. Thanks for playing.
+
+This post is a quick overview of accountancy, from the point of view of a
+developer who recently had to automate some of it. We use
+L<http://www.odoo.com|odoo> as our ERP package, but this stuff basically
+applies to everything. However, I will probably be saying stuff that makes more
+sense when read in relation to odoo than other ERP systems.
+
+=h2 Sales Orders, Invoices
+
+A sales order is a list of stuff you're going to sell.
+
+An invoice is what happens when you've agreed to sell the stuff. It's basically
+an immutable sales order. I'm not sure whether it's actually immutable.
+
+Easy, right? No.
+
+=h2 Debits and Credits
+
+Whenever money goes into an account you I<debit> it. Whenever money leaves an
+account, you I<credit> it.
+
+This is a lie, but it's the most common situation that I've come across so far,
+and it appears to be backwards until you understand why. Because the most
+common situation appears to be the opposite of what you think the words mean, I
+have decided to make it a rule of thumb for my own benefit, to force me to
+think about it whenever I do it.
+
+Here's why.
+
+When you I<debit> an account it goes into I<debt>. When you I<credit> an
+account it goes into I<credit>.
+
+If I give you money, you are in my I<debt>. Therefore, my account with you goes
+into debt; I I<debit> your account in my system. You I<credit> my account in
+your own system, because you have credit with me.
+
+Similarly, if I sell you something, I I<credit> your account, because you owe
+I<me> money. See how it works the same, from the same perspective? Receive
+money, debt; give money, credit.
+
+=h2 Double-Entry Bookkeeping
+
+Did you know the word I<bookkeeping> is the only word in the English language
+with three consecutive double lettersF<1>F<2>?
+
+Double-entry bookkeeping is a sort of error-correction algorithm left over from
+the days when bookkeepers would write down all the transactions by hand on
+tabulated paper and store all the records in literal books. Each book represent
+an account (in fact, the book I<is> the account); and whenever money moves, it
+always has a I<debit> in one account and a I<credit> in another. It means that
+if you make a mistake you have a sort of RAID-like record of what you did, so
+you can hopefully recover from the error.
+
+We have computers, now. We don't need to do this any more. However, all ERP
+systems implement it, because if you gave it to an accountant without it, the
+accountant would be petrified of this scary new world where somehow accounting
+can be done with just one line per transaction.
+
+So we plug on, but that's OK, because the ERP system basically thinks of a pair
+of lines as a single line and abstracts away this problem from you, the
+developer. Probably.
+
+=h2 Journals and Reconciliation
+
+So let's say I sales-order you a bunch of stuff and it's 30 quid inc VAT. Then
+I invoice you. What happens?
+
+The invoice counts as a sort of I<asset>. That's when you don't move money, but
+you move something that has value, so you I<might as well> have moved money.
+Before, when it was a sales order, it was just a sort of quotation; here's what
+we'll do. But now, it's an invoice, so it has literal value.
+
+I've credited you with £30, you lucky scoundrel! I put a I<credit> of £30 in my
+B<debtor's control account>. This is an account that basically means "the
+balance of this account is how much we owe/are owed". That's why we put a
+I<credit> in it, when money goes I<out>; we are owed that much money; we are in
+credit.
+
+But we are double-entry bookkeeping, so we need a debit that balances it. The
+account we pick here comes from the invoice; you can invoice different people
+against different accounts. That's half the point of bookkeeping in the first
+place. So we I<debit> the sales account, or something similar. We just need an
+account to be in debt.  If I'm selling you something, I'm losing something. If
+I've got you in credit (you owe me £30) I must be about to lose £30 worth of
+stuff, right? 
+
+So I've given you the items (I've lost £30 worth of stock) and invoiced you for
+it (credited you with £30) but you've not given me the money yet, so the system
+overall says we're £30 down on sales but we're in credit with someone else so
+that's square.
+
+=footnote 1 Technically its root word, I<bookkeep>, would be, but that doesn't
+seem to be a word. I<Bookkeeper> is "another" one, but it's basically the same
+word, as are the derivatives of both.
+
+=footnote 2 Some would say that I<sweettooth> is another, but I would hesitate
+to consider it one word.
