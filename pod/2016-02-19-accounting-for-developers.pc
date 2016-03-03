@@ -7,12 +7,20 @@ L<http://www.odoo.com|odoo> as our ERP package, but this stuff basically
 applies to everything. However, I will probably be saying stuff that makes more
 sense when read in relation to odoo than other ERP systems.
 
-=h2 Sales Orders, Invoices
+=h2 Quotation, Sales Orders, Invoices
 
-A sales order is a list of stuff you're going to sell.
+A quotation is like an offer of stuff. It lists the things and the prices and
+isn't binding in any way. You've probably seen a quotation before; you would
+get one from, say, a builder, before they do the work.
+
+A sales order is a list of stuff you're agreeing to sell. If, for example, the
+stuff needs making, you would start making it at this point. You may add things
+to the sales order, for example administrative costs.
 
 An invoice is what happens when you've agreed to sell the stuff. It's basically
-an immutable sales order. I'm not sure whether it's actually immutable.
+an immutable sales order. I'm not sure whether it's actually immutable. Once
+you've made the stuff and handed it over you would produce an invoice,
+requiring payment.
 
 Easy, right? No.
 
@@ -21,13 +29,9 @@ Easy, right? No.
 Whenever money goes into an account you I<debit> it. Whenever money leaves an
 account, you I<credit> it.
 
-This is a lie, but it's the most common situation that I've come across so far,
-and it appears to be backwards until you understand why. Because the most
-common situation appears to be the opposite of what you think the words mean, I
-have decided to make it a rule of thumb for my own benefit, to force me to
-think about it whenever I do it.
-
-Here's why.
+In general this is not true, but in the most common scenario it seems to hold.
+You may be thinking it's backwards; when money goes out it's a debit and when
+money goes in it's a credit. That's not quite true. Here's why.
 
 When you I<debit> an account it goes into I<debt>. When you I<credit> an
 account it goes into I<credit>.
@@ -36,9 +40,17 @@ If I give you money, you are in my I<debt>. Therefore, my account with you goes
 into debt; I I<debit> your account in my system. You I<credit> my account in
 your own system, because you have credit with me.
 
+Hope you're keeping up.
+
 Similarly, if I sell you something, I I<credit> your account, because you owe
 I<me> money. See how it works the same, from the same perspective? Receive
 money, debt; give money, credit.
+
+So when you put your bank account into credit, the bank now owes you money.
+When you debit it, you owe the bank money.
+
+Every credit and debit is between two accounts, and for the other person the
+perspective is reversed.
 
 =h2 Double-Entry Bookkeeping
 
@@ -47,7 +59,7 @@ with three consecutive double lettersF<1>F<2>?
 
 Double-entry bookkeeping is a sort of error-correction algorithm left over from
 the days when bookkeepers would write down all the transactions by hand on
-tabulated paper and store all the records in literal books. Each book represent
+tabulated paper and store all the records in literal books. Each book represents
 an account (in fact, the book I<is> the account); and whenever money moves, it
 always has a I<debit> in one account and a I<credit> in another. It means that
 if you make a mistake you have a sort of RAID-like record of what you did, so
@@ -55,41 +67,149 @@ you can hopefully recover from the error.
 
 We have computers, now. We don't need to do this any more. However, all ERP
 systems implement it, because if you gave it to an accountant without it, the
-accountant would be petrified of this scary new world where somehow accounting
-can be done with just one line per transaction.
+accountant would be petrified of this scary new world where referential
+integrity can guarantee the validity of your data without a human at the helm
+introducing failure nodes.
 
 So we plug on, but that's OK, because the ERP system basically thinks of a pair
 of lines as a single line and abstracts away this problem from you, the
 developer. Probably.
 
-=h2 Journals and Reconciliation
+=h2 Accounts
 
 So let's say I sales-order you a bunch of stuff and it's 30 quid inc VAT. Then
 I invoice you. What happens?
 
-The invoice counts as a sort of I<asset>. That's when you don't move money, but
-you move something that has value, so you I<might as well> have moved money.
-Before, when it was a sales order, it was just a sort of quotation; here's what
-we'll do. But now, it's an invoice, so it has literal value.
+The first thing we need to consider is accounts. There's one main account to
+think about, plus various accounts that the individual system will create. The
+"Debtor's Control Account" is, in odoo, there by default; and there are various
+other accounts as well, such as sales account, tax control accounts, etc.
 
-I've credited you with £30, you lucky scoundrel! I put a I<credit> of £30 in my
-B<debtor's control account>. This is an account that basically means "the
-balance of this account is how much we owe/are owed". That's why we put a
-I<credit> in it, when money goes I<out>; we are owed that much money; we are in
-credit.
+Let's say we have a Sales Account and a Sales Tax Control Account, for
+simplicity.
 
-But we are double-entry bookkeeping, so we need a debit that balances it. The
-account we pick here comes from the invoice; you can invoice different people
-against different accounts. That's half the point of bookkeeping in the first
-place. So we I<debit> the sales account, or something similar. We just need an
-account to be in debt.  If I'm selling you something, I'm losing something. If
-I've got you in credit (you owe me £30) I must be about to lose £30 worth of
-stuff, right? 
+There was a sales order, so now I invoice you.
 
-So I've given you the items (I've lost £30 worth of stock) and invoiced you for
-it (credited you with £30) but you've not given me the money yet, so the system
-overall says we're £30 down on sales but we're in credit with someone else so
-that's square.
+So the scenario is, you owe me £30.
+
+That means you are in credit. That means I am in debt.
+
+We create a debit in the Debtor's Control Account, which is basically the
+account that totals up how much money I owe or am owed. A £30 debit in the
+Debtor's Control Account will show up that we have lost £30 somehow.
+
+One of the benefits of double-entry accounting is that each entry doesn't have
+to be double. £30 inc VAT is £25 plus VAT at 20%. I create a credit of £25 in
+the Sales Account (I have sold something worth £25) and £5 in the Sales Tax
+Control Account.
+
+Now, the £30 debit (we owe money for some reason!) is balanced by a £25 credit
+(someone owes us money as a result of a sale) and a £5 VAT charge (someone owes
+us VAT for some reason). In total, we're square.
+
+=h2 Partners
+
+The other thing to note is that all of these will have an associated
+I<partner>. A partner is simply any third-party with whom you have some
+financial relationship. In this case, that's you, the customer.
+
+All three entries will have you, the customer, listed as the partner, and all
+three will have the invoice number as well; so they can be associated with one
+another.
+
+Ultimately, for all the foibles of accounting, it doesn't actually matter
+I<why> you owe me £30 and why I apparently owe £30. The Debtor's Control
+Account tots up how much I'm losing to whom and the journal entries also tot up
+how much I'm owed by whom and, ultimately, as long as the latter is bigger than
+the former we're golden. It's not uncommon to produce invoices for multiple
+pieces of work at once, and to take payment in one big go.
+
+=h2 Journals and Reconciliation
+
+So wait, what's a journal? Well it's just the book you write this stuff in.
+Like a categorisation system. You might have a Sales Journal or a Card Payments
+Journal or whatever. The aforementioned "items" would be line entries in this
+book. All of the above would be entries in the Sales Journal, because they
+happened as the result of a sale.
+
+So now you pay me £30 in cash, thanks for your custom, hope you brought a
+brolly. What do I do?
+
+Now I create a I<new> journal entry - remember, a double entry - for the cash.
+This time I choose the Cash Journal, but what do I put in it?
+
+Well you've given me money, which is the opposite of before, when you owed me
+money.
+
+All else being equal, now I<I> owe I<you> £30.
+
+That means you're in debt. This is a confusing term all of a sudden. When
+you're in debt you owe money, right? Well no, when you owe money you're
+actually in credit. To be in a state of debt, in this situation, means that
+I<I> am "indebted" to you, but the debt is I<with> you.
+
+Think of it like this - if I credit you with something, like the wherewithal to
+understand all of this, then you are I<in> credit, i.e. you can think of the
+credit like some sort of stick, and when you're holding the stick you have the
+benefit of the doubt. And when you don't have the stick you have given someone
+else the benefit of the doubt, so now you're holding the other thing, the empty
+air thingy.
+
+So when you're holding the stick you are in credit and when you're not you are
+in debt.
+
+So that's why when I owe you money, I have to give the stick back, and so
+you're in debt and I'm in credit.
+
+OK, good. Since it was cash I can therefore put in the Cash Journal that we are
+indebted to you to the tune of £30. We already have you set up as a partner.
+
+That means I must put a I<credit> of £30 in the Debtor's Control Account, to
+balance it. Why this account? Well, it's the sum total of all the ins and outs
+so far. It's more a case of "Oh that's why it's called a control account" -
+that's pretty much the point of the account. It's the one that represents "us".
+
+So now we have one journal entry that represents us crediting you with £30
+worth of stuff, and one journal entry that represents us debiting you with £30,
+so what we do now is reconcile them.
+
+Reconciliation is simply saying, this journal entry balances that one. The
+incoming £30 cash is formally associated with the outgoing £30 assets.
+
+When we do that, the invoice gets put into paid status, and all the journals
+show magically that you have completed a £30 transaction with us, of which £5
+was VAT.
+
+=h2 That's it
+
+The majority of this post was focused on reminding you (and me) what it means
+to be in debt. It's odd to think that when you're in debt you are actually owed
+money, but it makes sense, because when you are in credit, you owe money.
+
+It seems a bit like the terms debit and credit are used, in everyday language,
+orthogonally to what they're really for. I mean, when you say you're in credit,
+what you're really saying is that someone is prepared to be in debt to you
+later, right? Like if you use your credit card, you've not I<really> spent the
+money, have you? There's no actual money I<on> the card; it's just like a
+buffer zone, such that transactions won't be actually acknowledged until later
+on. Right?
+
+And when I'm indebted to someone, I owe them stuff. Stands to reason. You give
+me stuff and I am in your debt.
+
+Wait, I am in I<your> debt? Am I not in my own debt? When you give me a card
+loaded with cash that isn't mine and you expect me to pay it back later, am I
+in debt or in credit? I mean, if someone just gave you the cash and said pay me
+back later you would say you are indebted to them, right?
+
+Right! When someone gives you stuff you are in I<their> debt and your I<own>
+credit. When you give them stuff they are in I<your> debt and I<their> credit.
+When someone does something to earn a reward you say it is "to their credit".
+
+So really the only confusion is in this term "in debt", which has lost the
+nuance of whose debt it is. A debt is the situation where you I<are owed>
+money. I<My> debt is when someone owes me money; I<your> debt is when I owe
+I<you> it.
 
 =footnote 1 Technically its root word, I<bookkeep>, would be, but that doesn't
 seem to be a word. I<Bookkeeper> is "another" one, but it's basically the same
