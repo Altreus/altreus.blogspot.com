@@ -365,7 +365,7 @@ C<grep> or C<sort> on that list instead.
   for my $file ( sort @files ) {...} 
 
   # loop files without their extensionsF<4>
-  for my $file ( map { s/\..+$//r } @files ) {...} </pre>
+  for my $file ( map { s/\..+$//r } @files ) {...} 
 
 We can use C<@files> as a list directly; or we can perform a sort, map or grep
 on it to return a different list. C<sort> alters order of the elements; C<map>
