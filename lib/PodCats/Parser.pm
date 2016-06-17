@@ -7,15 +7,20 @@ use parent qw(Pod::Cats);
 
 use HTML::Element;
 use HTML::TreeBuilder;
-use List::Util qw(reduce any);
+use List::Util qw(reduce any pairmap);
 use Digest::SHA qw(sha1_hex);
+use URI::file;
+use Image::Size qw(imgsize);
+use Scalar::IfDefined qw(lifdef);
+
+$Image::Size::NO_CACHE = 1;
 
 our @COMMANDS = qw(
     h1 h2 h3 h4 hr
     notice footnote
     item img
     head cell
-    quote
+    quote fig
 );
 
 our @BLOCKS = qw(
@@ -39,7 +44,10 @@ sub handle_command {
     any {$_ eq $command} @COMMANDS or die "Not a command: $command";
 
     if ($command =~ /h\d/) {
-        $self->add_element($command => @_);
+        my @data = split ' ', $_[0];
+        my %properties = $self->collapse_properties($self->shift_properties(\@data));
+
+        $self->add_element($command => \%properties, "@data");
     }
     if ($command eq 'hr') {
         $self->add_element('hr');
@@ -95,15 +103,56 @@ sub handle_command {
     if ($command eq 'img') {
         my @data = split ' ', $_[0];
 
+        if (@data == 1 && -e $data[0]) {
+            push @data, imgsize $data[0];
+        }
+
         $self->add_element(img => {
             src => $data[0],
             $data[1] ? (width => $data[1]) : (),
             $data[2] ? (height => $data[2]) : (),
         });
     }
-
     if ($command eq 'quote') {
         $self->add_element(blockquote => @_);
+    }
+    if ($command eq 'fig') {
+        my @data = split ' ', $_[0];
+
+        my %properties = $self->shift_properties(\@data, {
+            width => '',
+        });
+
+        my $img = shift @data;
+        my $img_src = URI::file->new($img)->abs(URI::file->cwd);
+        if (-e $img) {
+            my ($w, $h) = imgsize $img;
+            $properties{style}->{'max-width'} = $w
+                if $w and exists $properties{style}->{'max-width'};
+
+            $properties{style}->{'max-height'} = $h
+                if $h and exists $properties{style}->{'max-height'};
+        }
+        else {
+            warn "Couldn't determine size of $img"
+                if exists $properties{style}->{'max-height'}
+                or exists $properties{style}->{'max-width'};
+
+            delete $properties{style}->{'max-height'};
+            delete $properties{style}->{'max-width'};
+        }
+
+        %properties = $self->collapse_properties(%properties);
+
+        $self->add_element( figure =>
+            \%properties,
+            [
+                img => {
+                    src => $img_src
+                },
+                [ figcaption => "@data" ]
+            ]
+        );
     }
 }
 
@@ -250,6 +299,50 @@ sub add_raw {
 sub as_html {
     my $self = shift;
     return join '', map { $_->as_HTML('<&>', '  '), "\n" } $self->{html}->content_list;
+}
+
+sub shift_properties {
+    my $self = shift;
+    my $data = shift;
+    my $values = shift;
+
+    my %properties = ( style => {} );
+
+    while ($data->[0] =~ /^:/) {
+        my $p = shift @$data;
+        if ($p eq ':left') {
+            $properties{style}->{float} = 'left';
+        }
+        if ($p eq ':right') {
+            $properties{style}->{float} = 'right';
+        }
+        if ($p eq ':clear') {
+            $properties{style}->{clear} = 'both';
+        }
+        if ($p eq ':width') {
+            $properties{style}->{'max-width'} = $values->{width};
+        }
+        if ($p eq ':height') {
+            $properties{style}->{'max-height'} = $values->{height};
+        }
+    }
+
+    return %properties;
+}
+
+sub collapse_properties {
+    my $self = shift;
+    my %properties = @_;
+
+    $properties{style} = join ';', pairmap { "$a:$b" } %{ $properties{style} }
+        if $properties{style};
+
+    return %properties;
+}
+
+sub img_info {
+    my $self = shift;
+    my $img = shift;
 }
 
 1;
