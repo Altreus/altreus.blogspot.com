@@ -25,6 +25,9 @@ of these is called a "commit". Each commit knows its parent. The special null
 hash represents the beginning of time; the very first commit has the null
 hash as its parent.
 
+=fig res/git-branching/1.png Incremental changes are stored as snapshots with
+parent information.
+
 Keeping sequential revision numbers is unnecessary complication. All we need to
 know is what the working tree looked like when we started, and what it looks
 like now we're finished. That is what the ancestry model encodes; at each
@@ -48,6 +51,9 @@ concepts within the system; probably the branch is stored along with the
 revision, so later the branches can be rebuilt by ordering revisions from the
 same branch by their revision number—or some similar idea.
 
+=fig res/git-branching/branch.png Branches represent divergent courses of
+development, often major features.
+
 A branch in git is just a name for I<one> of the commits in the history. Since
 a commit gets its identity from its ancestry, then whenever a commit is known
 to git, everything from that commit to the very first commit is also "part of"
@@ -56,6 +62,10 @@ the repository. That's because, in git, ancestry is all that matters.
 So rather than storing the branch that each revision is on, git merely stores
 the I<head> of the branch; the rest of the branch is I<implied> by this
 ancestry model we've been talking about so much.
+
+=fig :right :width res/git-branching/branch-label.png A single label in git
+suffices to create an entire branch, because parent relationships are enough to
+trace the whole branch.
 
 We consider every commit in the ancestral history of a branch head to be "on"
 that branch, but in practical conversation, we stop talking about the branch at
@@ -73,7 +83,7 @@ Whatever C<master> points to "is" the branch (we tend to refer to the head of
 the branch as "the branch", but that's just lazy semantics); the ancestry
 necessary to make C<master> actually meaningful is "on" the branch.
 
-=h3 Being "on" a branch
+=h3 :clear Being "on" a branch
 
 Understanding that a branch in git is merely a label is not enough; it is also
 important to understand that the label will move when you commit.
