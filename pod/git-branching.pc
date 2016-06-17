@@ -1,0 +1,156 @@
+Branching in git can become a horrible mess if you don't keep it in check, as a
+necessary consequence of the distributed—and isolated—nature of git.
+
+People coming from more traditional, centralised version control systems will
+have some idea of how they expect branching to work, and in git, it's almost
+certainly completely different from that.
+
+=h2 Ministry of Truth
+
+The first thing to forget about is the fact that revisions happen numerically.
+While true in SVN, this has been abandoned in git in favour of a more
+traditional tree model; which is to say, each node in the tree is simply linked
+to a previous node—its parent.
+
+In SVN, the revision number was important—a file at a particular revision was
+the entirety of SVN's semantics. In git, there is no sequential numbering; each
+commit is given a SHA-1 hash (based on its contents, author, timestamp etc) and
+the information about which commit it was based on.
+
+Remember this concept—"based on"—because it will come up later.
+
+So in git, our entire revision history is actually a unidirectional graph of
+hashes, each of which refers to a snapshot of the entire working tree. Each one
+of these is called a "commit". Each commit knows its parent. The special null
+hash represents the beginning of time; the very first commit has the null
+hash as its parent.
+
+Keeping sequential revision numbers is unnecessary complication. All we need to
+know is what the working tree looked like when we started, and what it looks
+like now we're finished. That is what the ancestry model encodes; at each
+instance in the tree, the state of the repository is stored, and it is linked
+to the state of the repository as it was beforehand. That is, we store the
+state of the repository, and I<base it on> a previous state.
+
+As this subheading suggests, this allows us to treat history as transient and
+editable.
+
+=h2 It Is What It Is
+
+What is a branch, then, in git? In other revision control systems these are
+formal divergences in development; their implementations may make them more or
+less cheap to create but they always must be merged into the main branch of
+development later in the future. Generally they seem to represent features; you
+create one when you expect your work to significantly impact many parts of the
+system, in order to avoid changing things under the noses of other people whose
+progress will be interrupted by your major changes. But they are formal
+concepts within the system; probably the branch is stored along with the
+revision, so later the branches can be rebuilt by ordering revisions from the
+same branch by their revision number—or some similar idea.
+
+A branch in git is just a name for I<one> of the commits in the history. Since
+a commit gets its identity from its ancestry, then whenever a commit is known
+to git, everything from that commit to the very first commit is also "part of"
+the repository. That's because, in git, ancestry is all that matters.
+
+So rather than storing the branch that each revision is on, git merely stores
+the I<head> of the branch; the rest of the branch is I<implied> by this
+ancestry model we've been talking about so much.
+
+We consider every commit in the ancestral history of a branch head to be "on"
+that branch, but in practical conversation, we stop talking about the branch at
+about the point it was created. This information is basically only stored in
+the group mind of the development team, but if you branch properly, git can
+help with maintaining that knowledge. We won't talk about that here, but
+understand that the technical definition of "on a branch" and the colloquial
+meaning often differ in their scope.
+
+In git, everything is done on a branch, and ideally, everything is done on a
+branch other than C<master>. You create a branch to try something out, or for a
+major feature, or for a minor feature on a major feature... There is no reason
+not to make a branch. SVN's C<trunk> is now just a branch called C<master>.
+Whatever C<master> points to "is" the branch (we tend to refer to the head of
+the branch as "the branch", but that's just lazy semantics); the ancestry
+necessary to make C<master> actually meaningful is "on" the branch.
+
+=h3 Being "on" a branch
+
+Understanding that a branch in git is merely a label is not enough; it is also
+important to understand that the label will move when you commit.
+
+Two things can be "on" a branch, so context is important. We've talked about
+what it means for a commit to be on a branch, but what does it mean to say that
+the I<repository> is on a branch?
+
+Git's job is to allow you to edit the files in the working directory, and then
+accept it when you have told it you've made a meaningful change—i.e., when you
+commit it. It's also there to allow you to retrieve any previous version of the
+working directory. Those SHA hashes we mentioned earlier—they're all that is
+required to get to a different edition of the codebase. You can request from
+git the working tree in any state simply by requesting the SHA.
+
+However, when you request a branch name instead of a SHA, git internally makes
+note that you are I<on> this branch, rather than the SHA at that location. This
+means that when you make a change and commit it, git has enough information to
+update the branch to the new commit, and does so automatically. By this
+mechanism, sequential commits are linked together by ancestry, but the branch
+remains named as you expect; i.e. the most recent commit is still named
+C<master> or C<feature> or whatever you called the branch.
+
+=h3 Checking out
+
+In some VCSss, checking out means fetching all the data from the repository so
+that you have real files on which to work. In git, it means something
+similar—it refers to the concept of getting all the files in the working
+directory into some known state.
+
+In git, when you check out a branch, git tries to make all the files in your
+working directory look like the branch says they should look. This will edit,
+delete, and create files as necessary. It also sets that internal label that
+you are "on" the branch.
+
+Recall that all of git's information is stored locally, so if you are used to
+there being a remote server with the repository information in it, you are used
+to the idea of checking out to refer to the fetching of that information, and
+then the updating of the files. Here, the information is stored in the C<.git>
+directory somewhere, but otherwise we are still updating all the files from
+that information.
+
+You can also check out any non-branch commit just by providing its hash. In
+this situation, git still changes the working directory to look like that
+snapshot; there is simply no label to make this commit meaningful, and nothing
+to move if you make a new commit.
+
+In fact, the only reason you know what the SHA is at all is because it is the
+ancestor of some branch.
+
+=h2 Divergence
+
+So earlier I recommended that you always create a new branch and work on that,
+instead of working on master. Now that we understand that a branch is a) a
+label b) that moves, we can see that the only difference between working on
+master and not working on master is which label is moved when you commit.
+
+The reason you don't really want to work on master is that it is common enough
+that you want to work on different things at the same time that you find
+yourself switching a lot. This is especially common when you're working in a
+team, but even on your own project you may get bored or stuck with one feature
+and want to hack on a different one. If you've committed that first feature to
+master, you can't go back to a known stable state to work on the other.
+
+Therefore, master should be treated like its name implies; this is the master
+revision of the software, and it should be stable and sacrosanct. Master should
+be buildable and testable and all that good stuff, so we should only commit to
+it when we're ready. More on that later.
+
+Divergence, therefore, is what you get when you start two branches at the same
+place, but commit different stuff to them. This is so common in other VCSes
+that I probably don't have to explain the concept; but remember that git uses
+ancestral knowledge to trace the history of the project, not sequential
+numbering and branch names.
+
+So it is important to realise that the only reason there are a) two branches or
+b) a divergence point is that there is a chain of ancestry from I<each branch>
+down to the null hash at the bottom.
+
+Which means that I<two commits have the same parent>.
