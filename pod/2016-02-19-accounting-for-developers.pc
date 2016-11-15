@@ -36,15 +36,25 @@ money goes in it's a credit. That's not quite true. Here's why.
 When you I<debit> an account it goes into I<debt>. When you I<credit> an
 account it goes into I<credit>.
 
-If I give you money, you are in my I<debt>. Therefore, my account with you goes
-into debt; I I<debit> your account in my system. You I<credit> my account in
-your own system, because you have credit with me.
+Credit means belief. Deb(i)t means obligation.
+
+If I give you money I am I<crediting> you, i.e. I'm giving you the benefit of
+the will-they-won't-they-give-me-the-money-back doubt. I believe that you will
+pay me back. Therefore the "you" account on my system goes into credit, even
+though money has left it.
+
+The "me" account on I<your> system goes into I<debit> because you have a debt to
+me, even though money has entered it.
 
 Hope you're keeping up.
 
-Similarly, if I sell you something, I I<credit> your account, because you owe
-I<me> money. See how it works the same, from the same perspective? Receive
-money, debt; give money, credit.
+If I sell you something I am effectively giving you money; I'm giving you assets
+of mine to the value of money. So I'm I<crediting> your account with the value
+of the goods, because I believe you will give it back. This means the amount of
+money in my assets account goes I<down>
+
+If you pay for something you're giving me money; mine is the obligation to
+return the funds, and yours is the belief that I shall.
 
 So when you put your bank account into credit, the bank now owes you money.
 When you debit it, you owe the bank money.
@@ -182,34 +192,17 @@ was VAT.
 
 =h2 That's it
 
-The majority of this post was focused on reminding you (and me) what it means
-to be in debt. It's odd to think that when you're in debt you are actually owed
-money, but it makes sense, because when you are in credit, you owe money.
+Most of my confusion with all of this was to do with the terms I<debit> and
+I<credit>, which I have tried to explain in terms of I<obligation> and
+I<belief>, respectively. We're already used to the term "credit" to mean
+"belief", and indeed in satellite concepts like value, positivity, etc.
 
-It seems a bit like the terms debit and credit are used, in everyday language,
-orthogonally to what they're really for. I mean, when you say you're in credit,
-what you're really saying is that someone is prepared to be in debt to you
-later, right? Like if you use your credit card, you've not I<really> spent the
-money, have you? There's no actual money I<on> the card; it's just like a
-buffer zone, such that transactions won't be actually acknowledged until later
-on. Right?
+But we don't think of debt as obligation, so much. We think of it as negativity,
+but we forget who I<owns> the negativity.
 
-And when I'm indebted to someone, I owe them stuff. Stands to reason. You give
-me stuff and I am in your debt.
+So it's kind of easy to understand that when I give you money I credit you; I
+believe you; and so when an account gains 
 
-Wait, I am in I<your> debt? Am I not in my own debt? When you give me a card
-loaded with cash that isn't mine and you expect me to pay it back later, am I
-in debt or in credit? I mean, if someone just gave you the cash and said pay me
-back later you would say you are indebted to them, right?
-
-Right! When someone gives you stuff you are in I<their> debt and your I<own>
-credit. When you give them stuff they are in I<your> debt and I<their> credit.
-When someone does something to earn a reward you say it is "to their credit".
-
-So really the only confusion is in this term "in debt", which has lost the
-nuance of whose debt it is. A debt is the situation where you I<are owed>
-money. I<My> debt is when someone owes me money; I<your> debt is when I owe
-I<you> it.
 
 =footnote 1 Technically its root word, I<bookkeep>, would be, but that doesn't
 seem to be a word. I<Bookkeeper> is "another" one, but it's basically the same

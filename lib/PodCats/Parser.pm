@@ -198,6 +198,8 @@ sub handle_entity {
             $link = "https://metacpan.org/module/$link";
         }
 
+        @content = $text if not @content;
+
         return [ a => { href => $link }, @content ];
     }
 
