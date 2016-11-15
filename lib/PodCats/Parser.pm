@@ -255,7 +255,7 @@ sub handle_entity {
         my $num = $content[0];
         return [
             sup => [
-                a => {
+                a => $num => {
                     href => "#footnote-$self->{sha}-$num",
                     name => "fn-$self->{sha}-$num",
                     class => 'footnote-from',
