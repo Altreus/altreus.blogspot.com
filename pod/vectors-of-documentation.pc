@@ -1,0 +1,139 @@
+There are two major sources of frustration when using unfamiliar things and
+relying on their documentation. The first one, you can't really do much about:
+the thing you expect something to be called is not what the author thought it
+should be called. That's OK; naming things is hard, and we'll not always agree.
+At this point you start at the top and see whether the framework has this
+feature at all, or you ask someone.
+
+The second is something you, the documentation writer, can address right now,
+which is when you I<do> successfully find the thing you expected, but the
+documentation for the thing gives you absolutely no sense of how it fits in the
+grand scheme of things.
+
+This is a symptom of failing to consider B<vectors of documentation>. I'm using
+this term to refer to the fact that people will arrive at your documentation
+through many means, and indeed will navigate it through many means. If you write
+your documentation to accommodate all sorts of people, your mediocre
+documentation may just end up good.
+
+=h2 The New User
+
+The new user is the simplest person to write documentation for. This is someone
+who finds your top-level namespace and reads, from the top, about what your
+thing does and how to use it.
+
+Most documentation covers this, because this is what people consider when they
+write it. As you write in this direction, you filter down to ever-more-specific
+modules, and give up on repeating yourself, because you assume people have read
+it in the order you wrote it. 
+
+They haven't.
+
+=h2 The Can I Do This Thinger
+
+This is the person I described earlier. They've hoped that your framework does a
+thing, guessed at the name, and got it right. Now they've navigated to the
+documentation for your module and they have no idea how to use it.
+
+=h2 The What Does This Doer
+
+Sometimes, people read other people's code. Then they find a module name, and
+hope to find some information about it in the documentation. Imagine their
+surprise when the entire POD is a single line of description and a copyright
+notice.
+
+=h2 Angles to consider
+
+When you document trivial modules, the world will benefit if you consider people
+who did not read all the other stuff you just read. Don't forget, we have
+hyperlinks in this day and age.
+
++list
+
+=item Does your module have a synopsis?
+
+Your module should show how to use it in the simplest way, even if you'd expect
+that to be guessable. Remember, this could be the first time they've tried to do
+this at all, so they won't necessarily be confident about the syntax.
+
+=item Does your module link to the I<other> module that explains what it's
+for?
+
+The user may not be confident that this is what they actually mean. If you link
+to the documentation about the generic concept that this is an implementation
+of, they can decide that.
+
+=item Is your description exhaustive?
+
+Just because it's a tiny module that has a fairly simple purpose doesn't mean
+there aren't questions. Smaller modules tend to be applicable to a wider gamut
+of situations, so be sure to cover the way it behaves in strange situations.
+
+This might have the adverse effect of making you think of features you might
+want to add.
+
+=item Is it similar to something else?
+
+Link to other stuff too. That's common.
+
+=item Is it discoverable in the first place?
+
+Modules like this are commonly found as part of a larger distribution, like a
+framework.
+
+Frameworks have a dirtyF<1> habit of making module discovery convenient and dynamic.
+
+Your user might be working only from a bottom-level module name and a prayer.
+Your documentation should contain enough searchable data that they can find it
+from the I<usage> of it, not just the name of it.
+
+=item Can I get from C<perldoc> page to C<perldoc> page easily?
+
+Not all documentation is browsed online, but that's the obvious place to start
+if you've not installed the module yet. If you force people through a million
+modules to get from your trivial implementation to some actual fruitful
+information, you'll breed resentment. Tell us where to go for various pieces of
+information, because we're already copy-pasting the module name out of the
+perldoc, or typing it by hand.
+
+-list
+
+=h2 Culprits
+
+Now, normally it's impolite to name names, but in this situation I think it's
+helpful. While I'm well aware that there are many culprits here, the module that
+inspired me to write this post is none other than L<HTML::FormFu>. This module
+frequently frustrates me when I try to figure it out, and I often have to turn
+to IRC to get clarification.
+
+In this case, I wondered whether there were an easy way to strip whitespace from
+the ends of a text field. There is. L<HTML::FormFu::Filter::TrimEdges> does
+exactly that. Unfortunately, I thought "Maybe it's called a filter" and searched
+to this effect. L<https://metacpan.org/search?q=formfu+filter+whitespace>
+
+The reader will observe that the module I found was returned as a secondary
+suggestion to the Whitespace filter itself.
+
+The reader will also observe it makes no effort to inform people who find it
+about how to use it.
+
++list
+
+=item How do I set it up? A simple synopsis would suffice
+
+=item Where is the documentation for filters in general?
+
+=item When I find and read that, it says I can use a filter on anything. What
+happens if I use it on other things? Select boxes? Textareas?
+
+=item Is there a filter that trims whitespace from I<each line> of a textarea?
+Does this do that?
+
+-list
+
+The module I<does>, just about, address people who find a filter is in use,
+because it's discoverable from the terms C<filter> and C<TrimEdges>. But it
+has left me with questions, so in all situations but the one it describes, I
+will be uninformed.
+
+=footnote 1 But very useful.
