@@ -247,7 +247,7 @@ sub handle_entity {
             $link = "https://metacpan.org/module/$link";
         }
 
-        return [ a => { href => $link }, @content ];
+        return [ a => { href => $link }, $text, @content ];
     }
 
     # F for Footnote - links to the =footnote of the same $num
