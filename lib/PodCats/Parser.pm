@@ -58,11 +58,19 @@ sub handle_command {
     if ($command eq 'footnote') {
         my ($num) = $_[0] =~ s/(\d+)//;
 
-        $self->add_element(sup => [
-            'a', $num, @_, {
-                href => sprintf('#fn-%s-%d', $self->{sha}, $num),
-                name => sprintf('footnote-%s-%d', $self->{sha}, $num),
-                class => 'footnote-to',
+        $self->add_element([ p => 
+            [
+                sup => [
+                    'a' => $num, {
+                        href => sprintf('#fn-%s-%d', $self->{sha}, $num),
+                        name => sprintf('footnote-%s-%d', $self->{sha}, $num),
+                        class => 'footnote-to',
+                    },
+                ],
+                @_ 
+            ],
+            {
+                class => 'footnote'
             },
         ]);
     }
