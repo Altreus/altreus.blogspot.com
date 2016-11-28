@@ -44,10 +44,9 @@ sub handle_command {
     any {$_ eq $command} @COMMANDS or die "Not a command: $command";
 
     if ($command =~ /h\d/) {
-        my @data = split ' ', $_[0];
-        my %properties = $self->collapse_properties($self->shift_properties(\@data));
+        my %properties = $self->collapse_properties($self->shift_properties(\@_));
 
-        $self->add_element($command => \%properties, "@data");
+        $self->add_element($command => \%properties, @_);
     }
     if ($command eq 'hr') {
         $self->add_element('hr');
@@ -125,13 +124,11 @@ sub handle_command {
         $self->add_element(blockquote => @_);
     }
     if ($command eq 'fig') {
-        my @data = split ' ', $_[0];
-
-        my %properties = $self->shift_properties(\@data, {
+        my %properties = $self->shift_properties(\@_, {
             width => '',
         });
 
-        my $img = shift @data;
+        my $img = shift;
         my $img_src = URI::file->new($img)->abs(URI::file->cwd);
         if (-e $img) {
             my ($w, $h) = imgsize $img;
@@ -158,7 +155,7 @@ sub handle_command {
                 img => {
                     src => $img_src
                 },
-                [ figcaption => "@data" ]
+                [ figcaption => @_ ]
             ]
         );
     }
@@ -246,16 +243,17 @@ sub handle_entity {
     }
 
     if ($entity eq 'L') {
-        my ($link, $text) = split /\|/, shift @content;
+        my ($link, @text) = split /\|/, shift @content;
+        push @text, @content;
 
-        $text = $link if not $text;
+        @text = $link if not @text;
 
         # looks like a module
         if ($link =~ /^(\w+)(::\w+)*$/) {
             $link = "https://metacpan.org/module/$link";
         }
 
-        return [ a => { href => $link }, $text, @content ];
+        return [ a => { href => $link }, @text ]
     }
 
     # F for Footnote - links to the =footnote of the same $num
