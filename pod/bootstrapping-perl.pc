@@ -1,0 +1,128 @@
+This blog post shows a simple, I<hands-off>, automated way to get yourself a
+Perl environment in user land. If you already know enough about all of this to
+do it the hard way, and you prefer that, then this post is not aimed at you.
+
+Here's what we are going to achieve:
+
++list
+
+=item Set up a Perl 5.24 installation
+
+=item Set up your environment so you can install modules
+
+=item Set up your project so you can install its dependencies
+
+-list
+
+These are the things people seem to struggle with a lot, and the instructions
+are piecemeal all over the internet. Here they are all standing in a row.
+
+=h2 Perlbrew your Perl 5.24
+
+As this blog post becomes older, that number will get bigger, so make sure to
+alter it if you copy this from the future.
+
+Do this as root:
+
+B<Debian>
+
+    apt-get install perlbrew
+
+B<FreeBSD>
+
+    fetch -o- https://install.perlbrew.pl | sh
+    
+B<Whatever else>
+
+    curl -L https://install.perlbrew.pl | bash
+
+B<Windows>
+
+Haha, yeah, right.
+
+Once you've installed perlbrew, log out of root and init it as your user. Then
+install a perl. B<This will take a while.>
+
+    perlbrew init
+    perlbrew install perl-5.24.0
+
+There, you now have a Perl 5.24.0 installation in your home folder. C<which
+perl> will still say C</usr/bin/perl> so you can change that:
+
+    perlbrew switch perl-5.24.0
+
+It will have already told you that you need to alter your C<.bashrc> or
+suchlike, with something like this:
+
+    source $HOME/perl5/perlbrew/etc/bashrc
+
+You should do that.
+
+Perlbrew does other stuff - see L<https://perlbrew.pl> for details.
+
+=h2 C<cpanm>
+
+You want to be able to install modules against your new perl.
+
+B<You will have to reinstall modules under every perl you have> if you want to
+use the same modules under different versions. This is because of reasons.F<1>
+
+    perlbrew install-cpanm
+
+Now you can use L<App::cpanminus|C<cpanm>> to install modules. If you install a
+new Perl with perlbrew, you will have to
+
+    perlbrew switch $your_new_perl
+    perlbrew install-cpanm
+
+All over again. If you're dealing with multiple Perl versions for a reason,
+you've probably already read the docs enough that you know which commands to
+use.
+
+=h2 C<cpanfile>
+
+A C<cpanfile> is a file in your project that lists the dependencies it requires.
+The purpose of this file is for when you are developing a project, and thus you
+haven't actually installed it. It looks like this.
+
+    requires "Moose";
+    requires "DBIx::Class" => "0.082840";
+    requires "perl" => "5.24";
+
+    test_requires "Test::More";
+
+You use it like this
+
+    cpanm --installdeps .
+
+The C<.> refers to the current directory, of course, so you run this from a
+place that has a C<cpanfile> in it.
+
+The full syntax is L<https://metacpan.org/pod/cpanfile|on CPAN>.
+
+=h3 Purpose of C<cpanfile>
+
+A "project" here refers to basically anything you might put on CPAN - a
+distribution. It might be a module, or just some scripts, or a whole suite of
+both of those things.
+
+The point is it's a unit, and it has dependencies, and you can't run the code
+without satisfying those dependencies.
+
+If you install this distribution with C<cpanm> then it will automatically
+install the dependencies because the author set up the makefile correctly so
+that C<cpanm> knew what the dependencies were. C<cpanm> also puts the modules in
+C<$PERL5LIB> and the scripts in C<$PATH> so that you can use them.
+
+If you have the source code, either you I<are> the author, or at least you're a
+contributor; you don't want to run the makefile just to install the
+dependencies, because this will install the development version of the module
+too. Nor do you want to require your contributors to install the
+L<http://dzil.org/|whole of dzil> just to contribute to your module. So, you
+provide a C<cpanfile> that lists the dependencies they require to run or develop
+your module or scripts.
+
+=footnote 1 The primary reason is that every Perl version has a slightly
+different set of development headers, so any modules written in C will be
+incompatible. It's too much effort to separate them and disk space is cheap; so
+we just keep separate libraries and avoid the problem.
